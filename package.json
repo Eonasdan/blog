@@ -1,0 +1,12 @@
+{
+  "name": "blog",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "npm run build && npx servor --reload --browse --editor",
+    "build": "node make.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "jsdom": "^16.4.0"
+  }
+}
