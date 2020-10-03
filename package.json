@@ -2,7 +2,7 @@
   "name": "blog",
   "version": "1.0.0",
   "scripts": {
-    "start": "npm run build && npx servor --reload --browse --editor",
+    "start": "npm run build && npx servor --reload",
     "build": "node make.js"
   },
   "dependencies": {},

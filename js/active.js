@@ -15,16 +15,6 @@
         $('#vizewNav').classyNav();
     }
 
-    // :: 3.0 Newsticker Active Code
-    if ($.fn.simpleTicker) {
-        $.simpleTicker($("#breakingNewsTicker"), {
-            speed: 1000,
-            delay: 3000,
-            easing: 'swing',
-            effectType: 'roll'
-        });
-    }
-
     // :: 4.0 Sticky Active Code
     if ($.fn.sticky) {
         $("#sticker").sticky({
@@ -34,46 +24,12 @@
 
     // :: 5.0 Sliders Active Code
     if ($.fn.owlCarousel) {
-        $('.twitter-slides').owlCarousel({
-            items: 1,
-            margin: 0,
-            loop: true,
-            dots: false,
-            autoplay: true,
-            autoplayTimeout: 4000,
-            smartSpeed: 1000
-        });
-
         $('.featured-post-slides').owlCarousel({
             items: 1,
             margin: 0,
             loop: true,
             nav: true,
-            navText: ['<i class="fa fa-angle-left"></i>', '<i class="fa fa-angle-right"></i>'],
-            dots: false,
-            autoplay: true,
-            autoplayTimeout: 4000,
-            smartSpeed: 1000
-        });
-
-        $('.sport-video-slides').owlCarousel({
-            items: 1,
-            margin: 0,
-            loop: true,
-            nav: true,
-            navText: ['<i class="fa fa-angle-left"></i>', '<i class="fa fa-angle-right"></i>'],
-            dots: false,
-            autoplay: true,
-            autoplayTimeout: 4000,
-            smartSpeed: 1000
-        });
-
-        $('.business-video-slides').owlCarousel({
-            items: 1,
-            margin: 0,
-            loop: true,
-            nav: true,
-            navText: ['<i class="fa fa-angle-left"></i>', '<i class="fa fa-angle-right"></i>'],
+            navText: ['<i class="far fa-angle-left"></i>', '<i class="far fa-angle-right"></i>'],
             dots: false,
             autoplay: true,
             autoplayTimeout: 4000,
@@ -94,7 +50,7 @@
     if ($.fn.scrollUp) {
         browserWindow.scrollUp({
             scrollSpeed: 1500,
-            scrollText: '<i class="ti-angle-up"></i>'
+            scrollText: '<i class="far fa-angle-up"></i>'
         });
     }
 

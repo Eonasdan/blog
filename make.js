@@ -1,27 +1,37 @@
 const fs = require('fs');
 const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
+const {JSDOM} = jsdom;
+const path = require('path');
 
-const details = (file) => ({
-    size: fs.readFileSync(`./posts/${file}`).length,
-    mtime: fs.statSync(`./posts/${file}`).mtime,
-});
+const details = (file) => {
+    const html = fs.readFileSync(`./posts/${file}`, 'utf8');
+    const metaTag = new JSDOM(html).window.document.querySelector("post-meta");
+    const article = new JSDOM(html).window.document.querySelector("article");
+    // strip html tags, line breaks and extra spaces
+    const articleBody = article.textContent.replace(/(\r\n|\n|\r)/gm, '').replace(/\s+/g, ' ');
 
-fs.readFile(`./test1.html`, 'utf8', function (error, html) {
-    console.log('here')
-    if (error) {
-        throw error;
-    }
-    const dom = new JSDOM(html);
-    const a = dom.window.document.querySelector("post-meta").textContent;
-    var b = JSON.parse(a);
-    console.log(html)
-});
+    let baseMeta = {
+        file: file.replace(path.extname(file),''),
+        title: file.replace(path.extname(file), ''),
+        body: articleBody,
+        "postDate": fs.statSync(`./posts/${file}`).mtime
+    };
 
-const posts = fs
+    if (!metaTag || metaTag.textContent.replace(/(\r\n|\n|\r)/gm, '').replace(/\s+/g, '') === '') return baseMeta;
+
+    const postMeta = JSON.parse(metaTag.textContent);
+    return {
+        ...baseMeta,
+        ...postMeta
+    };
+};
+
+let posts = fs
     .readdirSync('./posts')
-    .reduce((a, b) => {
-        return ({...a, [b.replace('.md', '')]: details(b)});
-    }, {});
+    .filter(file => path.extname(file).toLowerCase() === '.html')
+    .map(file => details(file))
+    .sort((a, b) => {
+        return +new Date(a.postDate) > +new Date(b.postDate) ? -1 : 0;
+    });
 
-fs.writeFileSync('./posts.json', JSON.stringify(posts));
+fs.writeFileSync('./posts/posts.json', JSON.stringify(posts, null, 2));
