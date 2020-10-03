@@ -25,23 +25,27 @@ function getPost(file) {
         .then(function (html) {
             const doc = new DOMParser().parseFromString(html, "text/html");
             document.getElementById('post-inner').innerHTML = doc.querySelector('article').innerHTML;
-            document.head.innerHTML += doc.querySelector('post-head').innerHTML;
+            //document.head.innerHTML += doc.querySelector('post-head').innerHTML;
 
-            const thisPost = posts.find(x => x.file === file);
+            const post = posts.find(x => x.file === file);
             let postDate = new Date();
-            if (thisPost) {
-                document.title = thisPost.title;
-                if (thisPost.thumbnail) {
-                    document.getElementById('post-thumbnail').innerHTML = `<img src="/img/${thisPost.thumbnail}" alt="" class="img-fluid"/>`;
+            if (post) {
+                document.title = post.title;
+                if (post.thumbnail) {
+                    document.getElementById('post-thumbnail').innerHTML = `<img src="/img/${post.thumbnail}" alt="" class="img-fluid"/>`;
+                    document.getElementById('metaImage').setAttribute("content", `//${location.host}/img/${post.thumbnail}`);
                 } else {
                     document.getElementById('post-thumbnail').innerHTML = '';
                 }
-                if (thisPost.postDate) postDate = new Date(thisPost.postDate);
-                const shareWidget = document.getElementsByClassName('share-post-widget')[0];
-                //todo add media, excerpt ect
+                if (post.postDate) postDate = new Date(post.postDate);
+                /*const shareWidget = document.getElementsByClassName('share-post-widget')[0];
                 shareWidget.getElementsByClassName('facebook')[0].href = `https://www.facebook.com/sharer/sharer.php?u=${location.href}`;
-                shareWidget.getElementsByClassName('twitter')[0].href = `https://twitter.com/home?status=${location.href}`;
-                shareWidget.getElementsByClassName('linkedin')[0].href = `https://www.linkedin.com/shareArticle?mini=true&url=${location.href}`;
+                shareWidget.getElementsByClassName('twitter')[0].href = `https://twitter.com/intent/tweet?text=CHeck out this blog post from @Eonasdan. ${location.href}`;
+                shareWidget.getElementsByClassName('linkedin')[0].href = `https://www.linkedin.com/sharing/share-offsite/?url=${location.href}`;*/
+
+                document.getElementById('metaTitle').setAttribute("content", post.title);
+                document.getElementById('metaDescription').setAttribute("content", post.excerpt);
+                document.getElementById('metaUrl').setAttribute("content", location.href);
             }
 
             function updatePager(selector, post) {
@@ -53,15 +57,15 @@ function getPost(file) {
                 selector.getElementsByClassName('post-title')[0].innerHTML = post.title;
                 selector.getElementsByClassName('post-title')[0].dataset.file = post.file;
 
-               /* if (post.excerpt) {
-                    selector.getElementsByClassName('post-excerpt')[0].innerHTML = post.excerpt;
-                }*/
+                /* if (post.excerpt) {
+                     selector.getElementsByClassName('post-excerpt')[0].innerHTML = post.excerpt;
+                 }*/
                 selector.style.display = 'block'
             }
 
-            const index = posts.findIndex(x => x === thisPost);
-            const pastPost = posts[index+1];
-            const futurePost = posts[index-1];
+            const index = posts.findIndex(x => x === post);
+            const pastPost = posts[index + 1];
+            const futurePost = posts[index - 1];
 
             if (pastPost) updatePager(document.getElementById('previousPager'), pastPost);
             else document.getElementById('previousPager').style.display = 'none';
@@ -75,7 +79,7 @@ function showPosts(filteredPosts) {
     let html = ''
     if (!filteredPosts || filteredPosts.length === 0) html = '<h1>No results</h1>';
     filteredPosts.forEach(post => {
-       html += `<div class="single-post-area style-2">
+        html += `<div class="single-post-area style-2">
                         <div class="row align-items-center">
                             <div class="col-12 col-md-6">
                                 <div class="post-thumbnail">
@@ -112,14 +116,11 @@ fetch('./posts/posts.json')
         const term = urlParams.get('search');
         if (term) {
             search(term)
-        }
-        else if (redirect) {
+        } else if (redirect) {
             getPost(location.pathname.substring(1));
-        }
-        else if (location.pathname === '/') {
+        } else if (location.pathname === '/') {
             showPosts(posts);
-        }
-        else {
+        } else {
             noPost();
         }
     });
