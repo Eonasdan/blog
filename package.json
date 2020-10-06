@@ -2,10 +2,12 @@
   "name": "blog",
   "version": "1.0.0",
   "scripts": {
-    "start": "npm run build && npx servor --reload",
+    "start": "npm run build && browser-sync start --server --watch --no-open",
     "build": "node make.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "browser-sync": "^2.26.12"
+  },
   "devDependencies": {
     "jsdom": "^16.4.0"
   }

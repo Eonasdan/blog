@@ -20,7 +20,7 @@
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
 
-    <meta id="metaTitle" property="og:title" content="Eonasdan's Blog"/>
+    <meta id="metaTitle" property="og:title" content="Title of the article"/>
     <meta id="metaImage" property="og:image" content=""/>
     <meta id="metaDescription" property="og:description" content="Blog of the endless loop programer Eonasdan."/>
     <meta id="metaUrl" property="og:url" content="https://eonasdan.com" />
@@ -65,8 +65,8 @@
                         <!-- Top Search Area -->
                         <div class="top-search-area">
                             <form>
-                                <label class="sr-only" for="search">Search</label>
-                                <input type="search" name="search" id="search" placeholder="Search..."/>
+                                <label class="sr-only" for="topSearch">Search</label>
+                                <input type="search" name="top-search" id="topSearch" placeholder="Search...">
                                 <button type="submit" class="btn"><i class="far fa-search" aria-hidden="true"></i>
                                 </button>
                             </form>
@@ -115,20 +115,106 @@
 </header>
 <!-- ##### Header Area End ##### -->
 
-<!-- ##### Archive List Posts Area Start ##### -->
-<div class="vizew-archive-list-posts-area mb-80 mt-3">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-12">
-                <!-- Single Post Area -->
-                <div id="post-container">
-                    <h1>There's no post here.</h1>
-                </div>
+<!-- ##### Pager Area Start ##### -->
+<div class="vizew-pager-area mt-3">
+    <div id="previousPager" class="vizew-pager vizew-pager-prev">
+        <p>PREVIOUS ARTICLE</p>
+
+        <!-- Single Feature Post -->
+        <div class="single-feature-post video-post bg-img pager-article">
+            <!-- Post Content -->
+            <div class="post-content">
+                <!--<a href="#" class="post-cata cata-sm cata-success">Sports</a>-->
+                <a href="#" class="post-title"></a>
+            </div>
+        </div>
+    </div>
+
+    <div id="nextPager" class="vizew-pager vizew-pager-next">
+        <p>NEXT ARTICLE</p>
+
+        <!-- Single Feature Post -->
+        <div class="single-feature-post video-post bg-img pager-article">
+            <!-- Post Content -->
+            <div class="post-content">
+                <!--<a href="#" class="post-cata cata-sm cata-business">Business</a>-->
+                <a href="#" class="post-title"></a>
             </div>
         </div>
     </div>
 </div>
-<!-- ##### Archive List Posts Area End ##### -->
+<!-- ##### Pager Area End ##### -->
+
+<!-- ##### Post Details Area Start ##### -->
+<section class="post-details-area mb-80">
+    <div id="post-container" class="container">
+        <div class="row">
+            <div class="col-12">
+                <div id="post-thumbnail" class="post-details-thumb mb-50"></div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <!-- Post Details Content Area -->
+            <div class="col-12 col-lg-8 col-xl-7">
+                <div class="post-details-content">
+                    <div class="blog-content">
+                        <div id="post-inner"></div>
+
+                        <!-- Comment Area Start -->
+                        <div class="comment_area clearfix mb-50">
+
+                            <!-- Section Title -->
+                            <div class="section-heading style-2">
+                                <h4>Comment</h4>
+                                <div class="line"></div>
+                            </div>
+
+                            <script src="https://utteranc.es/client.js"
+                                    repo="eonasdan/blog"
+                                    issue-term="title"
+                                    theme="preferred-color-scheme"
+                                    crossorigin="anonymous"
+                                    async>
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Widget -->
+            <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                <div class="sidebar-area">
+
+                    <!-- ***** Single Widget ***** -->
+                   <!-- <div class="single-widget share-post-widget mb-50">
+                        <p>Share This Post</p>
+                        <a href="#" class="facebook" target="_blank"><i class="fab fa-facebook" aria-hidden="true"></i> Facebook</a>
+                        <a href="#" class="twitter" target="_blank"><i class="fab fa-twitter" aria-hidden="true"></i> Twitter</a>
+                        <a href="#" class="linkedin" target="_blank"><i class="fab fa-linkedin" aria-hidden="true"></i> LinkedIn</a>
+                    </div>-->
+
+                    <!-- ***** Single Widget ***** -->
+                    <div class="single-widget p-0 author-widget">
+                        <div class="p-4">
+                            <img class="author-avatar" src="https://github.com/eonasdan.png" alt="">
+                            <span class="author-name">Jonathan Peterson (Eonasdan)</span>
+                            <div class="author-social-info">
+                                <a href="http://twitter.eonasdan.com/" target="_blank"><i class="fab fa-twitter"></i></a>
+                                <a href="http://github.eonasdan.com/" target="_blank"><i class="fab fa-github"></i></a>
+                                <a href="http://twitch.eonasdan.com/" target="_blank"><i class="fab fa-twitch"></i></a>
+                            </div>
+                            <p>11+ years of web development experience on the Microsoft tech stack creating both
+                                internal enterprise applications and public facing websites.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- ##### Post Details Area End ##### -->
 
 <!-- ##### Footer Area Start ##### -->
 <footer class="footer-area">
@@ -217,7 +303,7 @@
 <script src="/js/plugins/plugins.js"></script>
 <!-- Active js -->
 <script src="/js/active.js"></script>
-<script src="/js/post.js"></script>
+<script src="/js/post2.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-179540837-1"></script>
 <script>

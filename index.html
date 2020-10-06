@@ -33,15 +33,6 @@
             crossorigin="anonymous"
     />
     <link rel="stylesheet" href="style.css">
-    <script>
-        const redirect = sessionStorage.redirect;
-        (function () {
-            delete sessionStorage.redirect;
-            if (redirect && redirect !== location.href) {
-                history.replaceState(null, null, redirect);
-            }
-        })();
-    </script>
 </head>
 
 <body>
@@ -132,30 +123,6 @@
 
                 <!-- Single Post Area -->
                 <div id="post-container">
-                    <div class="single-post-area style-2">
-                        <div class="row align-items-center">
-                            <div class="col-12 col-md-6">
-                                <!-- Post Thumbnail -->
-                                <div class="post-thumbnail">
-                                    <img src="https://colorlib.com/preview/theme/vizew/img/bg-img/21.jpg" alt="">
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <!-- Post Content -->
-                                <div class="post-content mt-0">
-                                    <a href="single-post.html" class="post-title mb-2">May fights on after Johnson
-                                        savages Brexit approach</a>
-                                    <div class="post-meta d-flex align-items-center mb-2">
-                                        <span class="post-author">By Jane</span>
-                                        <i class="far fa-circle" aria-hidden="true"></i>
-                                        <span class="post-date">Sep 08, 2018</span>
-                                    </div>
-                                    <p class="mb-2">Quisque mollis tristique ante. Proin ligula eros, varius id
-                                        tristique sit amet, rutrum non ligula.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <!-- Pagination -->
                 <!-- <nav class="mt-50">
@@ -257,10 +224,10 @@
         crossorigin="anonymous"
 ></script>
 <!-- All Plugins js -->
-<script src="js/plugins/plugins.js"></script>
+<script src="/js/plugins/plugins.js"></script>
 <!-- Active js -->
-<script src="js/active.js"></script>
-<script src="js/post.js"></script>
+<script src="/js/active.js"></script>
+<script src="/js/post.js"></script>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-179540837-1"></script>
 <script>
