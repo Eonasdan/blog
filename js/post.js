@@ -1,11 +1,5 @@
 let posts = [];
 
-function noPost() {
-    document.getElementById('post-container').innerHTML = "<h1>There's no post here.</h1>";
-    document.getElementById('previousPager').style.display = 'none';
-    document.getElementById('nextPager').style.display = 'none';
-}
-
 /*function onLinkClick(e) {
     e.preventDefault();
     const file = e.target.dataset.file;
@@ -46,6 +40,22 @@ function search(term) {
     showPosts(posts.filter(x => x.title.includes(term) || x.body.includes(term)));
 }
 
+function updatePager(selector, post) {
+    if (post.thumbnail) {
+        selector.getElementsByClassName('single-feature-post')[0].style.backgroundImage = `url(/img/${post.thumbnail})`;
+    } else {
+        selector.getElementsByClassName('single-feature-post')[0].style.backgroundImage = '';
+    }
+    const postTitle = selector.getElementsByClassName('post-title')[0];
+    postTitle.innerHTML = post.title;
+    postTitle.href = '/posts/' + post.file;
+
+    /* if (post.excerpt) {
+         selector.getElementsByClassName('post-excerpt')[0].innerHTML = post.excerpt;
+     }*/
+    selector.style.display = 'block'
+}
+
 fetch('/posts/posts.json')
     .then(response => response.json())
     .then(data => {
@@ -57,5 +67,25 @@ fetch('/posts/posts.json')
         } else if (location.pathname === '/') {
             showPosts(posts);
         }
+        else {
+            const index = posts.findIndex(x => x.file === location.pathname.replace('/posts/', ''));
+            if (index === -1) {
+                document.getElementById('previousPager').style.display = 'none';
+                document.getElementById('nextPager').style.display = 'none';
+            }
+            const pastPost = posts[index + 1];
+            const futurePost = posts[index - 1];
+
+            if (pastPost) updatePager(document.getElementById('previousPager'), pastPost);
+            else document.getElementById('previousPager').style.display = 'none';
+
+            if (futurePost) updatePager(document.getElementById('nextPager'), futurePost);
+            else document.getElementById('nextPager').style.display = 'none';
+        }
     });
-//[...document.querySelectorAll('.single-feature-post .post-title')].forEach(element => element.addEventListener('click', onLinkClick));
+
+function onLinkClick(e) {
+    window.location.href = e.target.href;
+}
+
+[...document.querySelectorAll('.vizew-pager .post-title')].forEach(element => element.addEventListener('click', onLinkClick));
