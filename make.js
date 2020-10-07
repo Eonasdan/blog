@@ -3,6 +3,8 @@ const jsdom = require("jsdom");
 const {JSDOM} = jsdom;
 const path = require('path');
 
+const rootSite = 'https://eonasdan.com';
+
 function stripHtml(html, replaceDoubleSpaceWith) {
     replaceDoubleSpaceWith = replaceDoubleSpaceWith || '';
     return html.textContent.replace(/(\r\n|\n|\r)/gm, '').replace(/\s+/g, replaceDoubleSpaceWith);
@@ -74,7 +76,7 @@ posts.forEach(file => {
         newPageDocument.title = postMeta.title;
         if (postMeta.thumbnail) {
             newPageDocument.getElementById('post-thumbnail').innerHTML = `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid"/>`;
-            setMetaContent(newPageDocument, 'metaImage', `/img/${postMeta.thumbnail}`);
+            setMetaContent(newPageDocument, 'metaImage', `${rootSite}/img/${postMeta.thumbnail}`);
         } else {
             newPageDocument.getElementById('post-thumbnail').innerHTML = '';
             setMetaContent(newPageDocument, 'metaImage', '');
@@ -86,7 +88,7 @@ posts.forEach(file => {
 
         setMetaContent(newPageDocument, 'metaTitle', postMeta.title);
         setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
-        setMetaContent(newPageDocument, 'metaUrl', `https://eonasdan.com/posts/${file}`);
+        setMetaContent(newPageDocument, 'metaUrl', `${rootSite}/posts/${file}`);
         setMetaContent(newPageDocument, 'metaPublishedTime', new Date(postMeta.postDate).toISOString());
         //todo could use the fs.state to get the modified time, but I'd rather have control over that
         if (!postMeta.updateDate) postMeta.updateDate = postMeta.postDate;
