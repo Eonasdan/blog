@@ -26,6 +26,13 @@ function removeDirectory(directory, removeSelf) {
         fs.rmdirSync(directory);
 }
 
+function setMetaContent(rootElement, selector, content) {
+    [...rootElement.getElementsByClassName(selector)].forEach(element => {
+        if (content) element.setAttribute("content", content);
+        else rootElement.getElementsByTagName('head')[0].removeChild(element);
+    });
+}
+
 
 //remove old stuff
 removeDirectory('./posts', false);
@@ -67,18 +74,25 @@ posts.forEach(file => {
         newPageDocument.title = postMeta.title;
         if (postMeta.thumbnail) {
             newPageDocument.getElementById('post-thumbnail').innerHTML = `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid"/>`;
-            newPageDocument.getElementById('metaImage').setAttribute("content", `/img/${postMeta.thumbnail}`);
+            setMetaContent(newPageDocument, 'metaImage', `/img/${postMeta.thumbnail}`);
         } else {
             newPageDocument.getElementById('post-thumbnail').innerHTML = '';
+            setMetaContent(newPageDocument, 'metaImage', '');
         }
         /*const shareWidget = document.getElementsByClassName('share-post-widget')[0];
         shareWidget.getElementsByClassName('facebook')[0].href = `https://www.facebook.com/sharer/sharer.php?u=${location.href}`;
         shareWidget.getElementsByClassName('twitter')[0].href = `https://twitter.com/intent/tweet?text=CHeck out this blog post from @Eonasdan. ${location.href}`;
         shareWidget.getElementsByClassName('linkedin')[0].href = `https://www.linkedin.com/sharing/share-offsite/?url=${location.href}`;*/
 
-        newPageDocument.getElementById('metaTitle').setAttribute("content", postMeta.title);
-        newPageDocument.getElementById('metaDescription').setAttribute("content", postMeta.excerpt);
-        newPageDocument.getElementById('metaUrl').setAttribute("content", `https://eonasdan.com/posts/${file}`);
+        setMetaContent(newPageDocument, 'metaTitle', postMeta.title);
+        setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
+        setMetaContent(newPageDocument, 'metaUrl', `https://eonasdan.com/posts/${file}`);
+        setMetaContent(newPageDocument, 'metaPublishedTime', new Date(postMeta.postDate).toISOString());
+        //todo could use the fs.state to get the modified time, but I'd rather have control over that
+        if (!postMeta.updateDate) postMeta.updateDate = postMeta.postDate;
+        setMetaContent(newPageDocument, 'metaModifiedTime', new Date(postMeta.updateDate).toISOString());
+
+        setMetaContent(newPageDocument, 'metaTag', postMeta.tags);
 
         postsMeta.push({
             ...baseMeta,
