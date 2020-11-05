@@ -1,5 +1,5 @@
 function showPosts(filteredPosts) {
-    let html = ''
+    let html = '';
     if (!filteredPosts || filteredPosts.length === 0) html = '<h1>No results</h1>';
     filteredPosts.forEach(post => {
         html += `<div class="single-post-area style-2">

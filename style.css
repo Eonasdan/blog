@@ -393,7 +393,7 @@ input:focus {
 .section-heading .line::after {
     width: 60px;
     height: 2px;
-    background-color: #db4437;
+    background-color: #7D1F17;
     content: '';
     position: absolute;
     bottom: 0;
@@ -433,7 +433,7 @@ input:focus {
 }
 
 #scrollUp:hover, #scrollUp:focus {
-    background-color: #db4437;
+    background-color: #7D1F17;
     color: #ffffff;
 }
 
@@ -448,7 +448,7 @@ input:focus {
 }
 
 .vizew-btn {
-    background-color: #db4437;
+    background-color: #7D1F17;
     -webkit-transition-duration: 500ms;
     -o-transition-duration: 500ms;
     transition-duration: 500ms;
@@ -518,7 +518,7 @@ input:focus {
 .top-header-area .breaking-news-area .news-title p {
     margin-bottom: 0;
     font-weight: 500;
-    color: #db4437;
+    color: #7D1F17;
     text-transform: uppercase;
 }
 
@@ -584,7 +584,7 @@ input:focus {
 }
 
 .top-header-area .breaking-news-area .ticker ul li a:hover, .top-header-area .breaking-news-area .ticker ul li a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .top-header-area .top-social-info {
@@ -625,7 +625,7 @@ input:focus {
 }
 
 .top-header-area .top-social-info a:hover, .top-header-area .top-social-info a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .top-header-area .top-search-area {
@@ -721,7 +721,7 @@ input:focus {
 }
 
 .top-header-area .top-search-area form button:hover {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .top-header-area .login-btn {
@@ -735,7 +735,7 @@ input:focus {
 }
 
 .top-header-area .login-btn:hover, .top-header-area .login-btn:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .header-area {
@@ -750,7 +750,7 @@ input:focus {
 }
 
 .header-area .vizew-main-menu .classy-nav-container {
-    background-color: #db4437;
+    background-color: #7D1F17;
 }
 
 .header-area .vizew-main-menu .classy-navbar {
@@ -837,13 +837,13 @@ input:focus {
 
 @media only screen and (min-width: 768px) and (max-width: 991px) {
     .header-area .vizew-main-menu .classy-navbar .classynav ul li a:hover, .header-area .vizew-main-menu .classy-navbar .classynav ul li a:focus {
-        color: #db4437;
+        color: #7D1F17;
     }
 }
 
 @media only screen and (max-width: 767px) {
     .header-area .vizew-main-menu .classy-navbar .classynav ul li a:hover, .header-area .vizew-main-menu .classy-navbar .classynav ul li a:focus {
-        color: #db4437;
+        color: #7D1F17;
     }
 }
 
@@ -877,7 +877,7 @@ input:focus {
 }
 
 .header-area .vizew-main-menu .classy-navbar .classynav ul li ul li a:hover, .header-area .vizew-main-menu .classy-navbar .classynav ul li ul li a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .header-area .vizew-main-menu .classy-navbar .classynav ul li.active a {
@@ -966,7 +966,7 @@ input:focus {
 
 .vizew-nav-tab .nav-link.active {
     background-color: #4d5051;
-    border-left-color: #db4437;
+    border-left-color: #7D1F17;
 }
 
 .vizew-breadcrumb {
@@ -1033,7 +1033,7 @@ input:focus {
 
 .vizew-breadcrumb .breadcrumb .breadcrumb-item a:hover, .vizew-breadcrumb .breadcrumb .breadcrumb-item a:focus {
     font-weight: 400;
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .vizew-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
@@ -1129,12 +1129,12 @@ input:focus {
 }
 
 .single-blog-post .post-content .post-title:hover, .single-blog-post .post-content .post-title:hover {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .single-blog-post .post-content .post-meta a {
     display: inline-block;
-    color: #595959;
+    color: #8c8c8c;
     font-size: 12px;
 }
 
@@ -1259,7 +1259,7 @@ input:focus {
 }
 
 .single-blog-post.style-3 .post-content .post-title:hover, .single-blog-post.style-3 .post-content .post-title:hover {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .single-blog-post.style-3 .post-content .post-meta span {
@@ -1387,7 +1387,7 @@ input:focus {
 }
 
 .single-feature-post.video-post .post-content .post-meta a:hover, .single-feature-post.video-post .post-content .post-meta a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .single-feature-post.video-post .video-duration {
@@ -1405,7 +1405,7 @@ input:focus {
 }
 
 .post-cata {
-    background-color: #db4437;
+    background-color: #7D1F17;
     padding: 8px 15px 6px;
     border-radius: 2px;
     font-size: 12px;
@@ -1423,7 +1423,7 @@ input:focus {
 }
 
 .post-cata.cata-danger {
-    background-color: #db4437;
+    background-color: #7D1F17;
 }
 
 .post-cata.cata-primary {
@@ -1512,7 +1512,7 @@ input:focus {
 }
 
 .single-post-area .post-content .post-title:hover, .single-post-area .post-content .post-title:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .single-post-area .post-content .post-meta a {
@@ -1521,7 +1521,7 @@ input:focus {
 }
 
 .single-post-area .post-content .post-meta a:hover, .single-post-area .post-content .post-meta a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .single-post-area .post-content .post-meta a:last-child {
@@ -1612,7 +1612,7 @@ input:focus {
 }
 
 .archive-catagory-view .archive-catagory h4 i {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .archive-catagory-view .view-options a {
@@ -1627,7 +1627,7 @@ input:focus {
 
 .archive-catagory-view .view-options a.active, .archive-catagory-view .view-options a:hover, .archive-catagory-view .view-options a:focus {
     background-color: #ffffff;
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .archive-catagory-view .view-options a.active {
@@ -1669,12 +1669,12 @@ input:focus {
 
 .pagination .page-item .page-link:hover, .pagination .page-item .page-link:focus {
     background-color: #ffffff;
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .pagination .page-item.active .page-link {
     background-color: #ffffff;
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .vizew-blockquote {
@@ -1834,7 +1834,7 @@ input:focus {
     color: #ffffff;
     text-align: center;
     line-height: 40px;
-    background-color: #db4437;
+    background-color: #7D1F17;
     margin-bottom: 10px;
     font-size: 16px;
 }
@@ -1861,7 +1861,7 @@ input:focus {
 }
 
 .post-details-content .post-share-info a:hover, .post-details-content .post-share-info a:focus {
-    background-color: #db4437;
+    background-color: #7D1F17;
 }
 
 .post-details-content .post-content {
@@ -1890,7 +1890,7 @@ input:focus {
 }
 
 .post-details-content .post-content .post-title:hover, .post-details-content .post-content .post-title:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .post-details-content .post-content .post-meta a {
@@ -1906,7 +1906,7 @@ input:focus {
 }
 
 .post-details-content .post-content .post-meta a:hover, .post-details-content .post-content .post-meta a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .post-details-content .post-content .post-meta a:last-child {
@@ -1916,11 +1916,11 @@ input:focus {
 .post-details-content .post-content .post-meta .post-author {
     display: inline-block;
     margin-right: 20px;
-    color: #595959;
+    color: #8c8c8c;
 }
 
 .post-details-content .post-content .post-meta .post-date {
-    color: #595959;
+    color: #8c8c8c;
 }
 
 .post-details-content .post-content .post-meta .fa-circle {
@@ -1930,7 +1930,7 @@ input:focus {
 }
 
 .post-details-content .blog-content a {
-    color:#dc3545;
+    color:#F5C7CB;
 }
 
 @media only screen and (max-width: 767px) {
@@ -1969,7 +1969,7 @@ input:focus {
 }
 
 .post-tags ul li a:hover, .post-tags ul li a:focus {
-    background-color: #db4437;
+    background-color: #7D1F17;
     color: #ffffff;
 }
 
@@ -2032,7 +2032,7 @@ input:focus {
 }
 
 .vizew-post-author .post-author-desc .post-author-social-info a:hover, .vizew-post-author .post-author-desc .post-author-social-info a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .comment_area {
@@ -2115,7 +2115,7 @@ input:focus {
 
 .comment_area .comment-content .comment-meta .like:hover,
 .comment_area .comment-content .comment-meta .reply:hover {
-    background-color: #db4437;
+    background-color: #7D1F17;
 }
 
 @media only screen and (max-width: 767px) {
@@ -2312,7 +2312,7 @@ input:focus {
     display: inline-block;
     height: auto;
     padding: 15px 5px;
-    background-color: #db4437;
+    background-color: #7D1F17;
     color: #ffffff;
 }
 
@@ -2472,7 +2472,7 @@ input:focus {
     height: 32px;
     line-height: 32px;
     text-align: center;
-    background-color: #db4437;
+    background-color: #7D1F17;
     border-radius: 3px;
     padding: 0;
     color: #ffffff;
@@ -2502,7 +2502,7 @@ input:focus {
     display: block;
     width: 150px;
     height: 40px;
-    background-color: #db4437;
+    background-color: #7D1F17;
     border-radius: 50px;
     margin-bottom: 15px;
     color: #ffffff;
@@ -2531,7 +2531,7 @@ input:focus {
 }
 
 .share-post-widget a:hover, .share-post-widget a:focus {
-    background-color: #db4437;
+    background-color: #7D1F17;
 }
 
 .author-widget {
@@ -2556,7 +2556,7 @@ input:focus {
 }
 
 .author-widget .author-name:hover, .author-widget .author-name:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .author-widget .author-social-info {
@@ -2636,7 +2636,7 @@ input:focus {
 }
 
 .footer-area .footer-widget .single-twit p i {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .footer-area .footer-widget .single-twit p span {
@@ -2654,7 +2654,7 @@ input:focus {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: #db4437;
+    background-color: #7D1F17;
     text-align: center;
     line-height: 40px;
     color: #ffffff;
@@ -2683,7 +2683,7 @@ input:focus {
 }
 
 .footer-area .footer-widget .footer-social-area a:hover, .footer-area .footer-widget .footer-social-area a:focus {
-    background-color: #db4437;
+    background-color: #7D1F17;
 }
 
 .footer-area .footer-widget .contact-address {
@@ -2719,7 +2719,7 @@ input:focus {
     position: absolute;
     width: 40px;
     height: 40px;
-    background-color: #db4437;
+    background-color: #7D1F17;
     color: #ffffff;
     z-index: 10;
     top: 0;
@@ -2781,7 +2781,7 @@ input:focus {
 }
 
 .footer-area .copywrite-area .copywrite-text a:hover, .footer-area .copywrite-area .copywrite-text a:focus {
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .footer-area .copywrite-area .footer-nav {
@@ -2833,7 +2833,7 @@ input:focus {
 
 .footer-area .copywrite-area .footer-nav ul li a:hover, .footer-area .copywrite-area .footer-nav ul li a:focus {
     font-weight: 400;
-    color: #db4437;
+    color: #7D1F17;
 }
 
 .footer-area .copywrite-area .footer-nav ul li:last-child a {
@@ -2902,5 +2902,5 @@ textarea.form-control {
 }
 
 #post-container {
-    min-height: 60vh;
+    min-height: 72vh;
 }

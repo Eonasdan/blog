@@ -48,7 +48,7 @@
             integrity="sha512-MoRNloxbStBcD8z3M/2BmnT+rg4IsMxPkXaGh2zD6LGNNFE80W3onsAhRcMAMrSoyWL9xD7Ert0men7vR8LUZg=="
             crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-179540837-1"></script>
     <script>
@@ -80,7 +80,7 @@
                         </div>
                         <!-- Top Search Area -->
                         <div class="top-search-area">
-                            <form>
+                            <form method="get" action="/">
                                 <label class="sr-only" for="search">Search</label>
                                 <input type="search" name="search" id="search" placeholder="Search..."/>
                                 <button type="submit" class="btn" title="search" aria-label="Search"><i class="far fa-search" aria-hidden="true"></i>
@@ -131,38 +131,12 @@
 </header>
 <!-- ##### Header Area End ##### -->
 
-[content]
+<div id="mainContent">
+
+</div>
 
 <!-- ##### Footer Area Start ##### -->
 <footer class="footer-area">
-    <div class="container">
-        <div class="row">
-            <!-- Footer Widget Area -->
-            <div class="col-12 col-sm-6 col-xl-3">
-            </div>
-
-            <!-- Footer Widget Area -->
-            <div class="col-12 col-sm-6 col-xl-3">
-            </div>
-
-            <!-- Footer Widget Area -->
-            <div class="col-12 col-sm-6 col-xl-3">
-            </div>
-
-            <!-- Footer Widget Area -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="footer-widget mb-70">
-                    <!-- Footer Social Area -->
-                    <div class="footer-social-area">
-                        <a href="http://twitter.eonasdan.com/" class="twitter" target="_blank" rel="noopener" title="Find me on Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="http://github.eonasdan.com/" target="_blank" rel="noopener" title="Find me on GitGub"><i class="fab fa-github"></i></a>
-                        <a href="http://twitch.eonasdan.com/" class="twitch" target="_blank" rel="noopener" title="Find me on Twitch"><i class="fab fa-twitch"></i></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Copywrite Area -->
     <div class="copywrite-area">
         <div class="container">
@@ -174,7 +148,7 @@
                         Copyright &copy;<script>document.write(new Date().getFullYear());</script>
                         All rights reserved | This template is made with <i class="fa fa-heart-o"
                                                                             aria-hidden="true"></i> by <a
-                            href="https://colorlib.com" target="_blank">Colorlib</a>
+                            href="https://colorlib.com" target="_blank" rel="noopener">Colorlib</a>
                         <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. --></p>
                 </div>
                 <div class="col-12 col-sm-6">
@@ -216,9 +190,7 @@
         crossorigin="anonymous"
 ></script>
 
-<!--<script src="/js/plugins/plugins.js"></script>
-<script src="/js/active.js"></script>-->
-<script src="/js/post.js"></script>
-
+<script src="/js/post.min.js"></script>
+<!--<script src="https://khan.github.io/tota11y/dist/tota11y.min.js"></script>-->
 </body>
 </html>

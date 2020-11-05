@@ -47,8 +47,22 @@ function setStructuredData(structure, property, value) {
     structure[property] = value;
 }
 
+function createRootHtml(html) {
+    html = minify(html, {
+        collapseWhitespace: true,
+        removeComments: true
+    });
+
+    return `<!DOCTYPE html>
+<html lang="en">${html}
+</html>`;
+}
+
 //read shell template
-const shellTemplate = fs.readFileSync(`./templates/shell-template.html`, 'utf8');
+const shellTemplate = fs.readFileSync(`./templates/shell.html`, 'utf8');
+function getShellDocument() {
+    return new JSDOM(shellTemplate).window.document;
+}
 
 //remove old stuff
 removeDirectory('./posts', false);
@@ -66,7 +80,15 @@ let homePageHtml = '';
 
 //create post files
 //read post template
-const postTemplate = fs.readFileSync(`./templates/post-template.html`, 'utf8');
+function getPostTemplate() {
+    const indexDocument = new JSDOM(fs.readFileSync(`./templates/post-template.html`, 'utf8')).window.document;
+    const shell = getShellDocument();
+    shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
+    return shell.documentElement.innerHTML;
+}
+
+const postTemplate = getPostTemplate();
+
 
 //for each post partial, we create a full html page
 posts.forEach(file => {
@@ -155,15 +177,7 @@ posts.forEach(file => {
         newPageDocument.getElementsByTagName("body")[0].appendChild(structuredDataTag);
     }
 
-    const minifiedBody = minify(newPageDocument.getElementsByTagName('html')[0].innerHTML, {
-        //collapseWhitespace: true,
-        removeComments: true
-    });
-
-    fs.writeFileSync(`./posts/${file}`,
-        `<!DOCTYPE html>
-<html lang="en">${minifiedBody}
-</html>`);
+    fs.writeFileSync(`./posts/${file}`, createRootHtml(newPageDocument.documentElement.innerHTML));
 
     //add to homepage html
     homePageHtml += `<div class="single-post-area style-2">
@@ -199,13 +213,18 @@ fs.writeFileSync('./posts/posts.json', JSON.stringify(postsMeta, null, 2));
 (function() {
     const indexDocument = new JSDOM(fs.readFileSync(`./templates/index.html`, 'utf8')).window.document;
     indexDocument.getElementById('post-container').innerHTML = homePageHtml;
-    const minifiedBody = minify(indexDocument.getElementsByTagName('html')[0].innerHTML, {
-        collapseWhitespace: true,
-        removeComments: true
-    });
 
-    fs.writeFileSync(`./index.html`,
-        `<!DOCTYPE html>
-<html lang="en">${minifiedBody}
-</html>`);
+    const shell = getShellDocument();
+    shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
+
+    fs.writeFileSync(`./index.html`, createRootHtml(shell.documentElement.innerHTML));
+})();
+
+//set 404 html
+(function() {
+    const indexDocument = new JSDOM(fs.readFileSync(`./templates/404.html`, 'utf8')).window.document;
+    const shell = getShellDocument();
+    shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
+
+    fs.writeFileSync(`./404.html`, createRootHtml(shell.documentElement.innerHTML));
 })();
