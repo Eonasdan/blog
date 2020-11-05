@@ -6,7 +6,8 @@
     "build": "node make.js"
   },
   "dependencies": {
-    "browser-sync": "^2.26.12"
+    "browser-sync": "^2.26.12",
+    "html-minifier": "^4.0.0"
   },
   "devDependencies": {
     "jsdom": "^16.4.0"

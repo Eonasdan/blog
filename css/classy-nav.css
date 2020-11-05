@@ -9,29 +9,6 @@
 ---------------------------------------------------------- */
 /* Base CSS */
 
-/*body {
-    font-family: "Roboto", sans-serif;
-}
-
-ul {
-    margin: 0;
-}
-
-ul li {
-    list-style: none;
-}
-
-img {
-    height: auto;
-    max-width: 100%;
-}
-
-.bg-img {
-    background-position: center center;
-    background-size: cover;
-    background-repeat: no-repeat;
-}*/
-
 .bg-transparent {
     background-color: transparent !important;
 }
