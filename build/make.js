@@ -2,7 +2,9 @@ const fs = require('fs');
 const jsdom = require("jsdom");
 const {JSDOM} = jsdom;
 const path = require('path');
-const minify = require('html-minifier').minify;
+const minify = require('html-minifier-terser').minify;
+const dropCss = require('dropcss');
+const cleanCSS = require('clean-css');
 
 const rootSite = 'https://eonasdan.com';
 
@@ -59,7 +61,7 @@ function createRootHtml(html) {
 }
 
 //read shell template
-const shellTemplate = fs.readFileSync(`./templates/shell.html`, 'utf8');
+const shellTemplate = fs.readFileSync(`./build/templates/shell.html`, 'utf8');
 
 function getShellDocument() {
     return new JSDOM(shellTemplate).window.document;
@@ -69,8 +71,8 @@ function getShellDocument() {
 removeDirectory('./posts', false);
 
 const posts = fs
-    .readdirSync('./post_partials')
-    .filter(file => path.extname(file).toLowerCase() === '.html')
+    .readdirSync('./build/post_partials')
+    .filter(file => path.extname(file).toLowerCase() === '.html');
 
 //create meta info
 let postsMeta = [];
@@ -78,12 +80,31 @@ let postsMeta = [];
 //prepare the static homepage text
 //todo at some point we'll have to deal with paging or infinite scrolls or something
 let homePageHtml = '';
+
+// prepare site map
 let siteMap = '';
+
+//read css files
+function getCss() {
+    let output = '';
+
+    const files = fs
+        .readdirSync('./css')
+        .filter(file => path.extname(file).toLowerCase() === '.css' && !file.includes('.min.'));
+
+    files.forEach(file => {
+        output += fs.readFileSync(`./css/${file}`, 'utf8') + '\r\n';
+    });
+
+    return output;
+}
+let css = getCss();
+let cssWhitelist = new Set();
 
 //create post files
 //read post template
 function getPostTemplate() {
-    const indexDocument = new JSDOM(fs.readFileSync(`./templates/post-template.html`, 'utf8')).window.document;
+    const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/post-template.html`, 'utf8')).window.document;
     const shell = getShellDocument();
     shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
     return shell.documentElement.innerHTML;
@@ -91,12 +112,11 @@ function getPostTemplate() {
 
 const postTemplate = getPostTemplate();
 
-
 //for each post partial, we create a full html page
 posts.forEach(file => {
     const fullyQualifiedUrl = `${rootSite}/posts/${file}`;
     const newPageDocument = new JSDOM(postTemplate).window.document;
-    const html = fs.readFileSync(`./post_partials/${file}`, 'utf8');
+    const html = fs.readFileSync(`./build/post_partials/${file}`, 'utf8');
     const article = new JSDOM(html).window.document.querySelector('article');
     newPageDocument.getElementById('post-inner').innerHTML = article.innerHTML;
 
@@ -110,7 +130,7 @@ posts.forEach(file => {
         file: file,
         title: file.replace(path.extname(file), ''),
         body: articleBody,
-        postDate: fs.statSync(`./post_partials/${file}`).mtime
+        postDate: fs.statSync(`./build/post_partials/${file}`).mtime
     };
 
     const publishDate = new Date(postMeta.postDate).toISOString();
@@ -180,7 +200,14 @@ posts.forEach(file => {
         newPageDocument.getElementsByTagName("body")[0].appendChild(structuredDataTag);
     }
 
-    fs.writeFileSync(`./posts/${file}`, createRootHtml(newPageDocument.documentElement.innerHTML));
+    const completeHtml = createRootHtml(newPageDocument.documentElement.innerHTML);
+    fs.writeFileSync(`./posts/${file}`, completeHtml);
+
+    //update pure css
+    dropCss({
+        css,
+        html: completeHtml
+    }).sels.forEach(sel => cssWhitelist.add(sel));
 
     //add to homepage html
     homePageHtml += `<div class="single-post-area style-2">
@@ -216,36 +243,57 @@ postsMeta = postsMeta
         return +new Date(a.postDate) > +new Date(b.postDate) ? -1 : 0;
     });
 
-fs.writeFileSync('./posts/posts.json', JSON.stringify(postsMeta, null, 2));
+fs.writeFileSync('posts/posts.json', JSON.stringify(postsMeta, null, 2));
 
 //set home page html
 (function () {
-    const indexDocument = new JSDOM(fs.readFileSync(`./templates/index.html`, 'utf8')).window.document;
+    const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/index.html`, 'utf8')).window.document;
     indexDocument.getElementById('post-container').innerHTML = homePageHtml;
 
     const shell = getShellDocument();
     shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
 
-    fs.writeFileSync(`./index.html`, createRootHtml(shell.documentElement.innerHTML));
+    const completeHtml = createRootHtml(shell.documentElement.innerHTML);
+    fs.writeFileSync(`./index.html`, completeHtml);
+    dropCss({
+        css,
+        html: completeHtml
+    }).sels.forEach(sel => cssWhitelist.add(sel));
 })();
 
 //set 404 html
 (function () {
-    const indexDocument = new JSDOM(fs.readFileSync(`./templates/404.html`, 'utf8')).window.document;
+    const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/404.html`, 'utf8')).window.document;
     const shell = getShellDocument();
     shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
 
+    const completeHtml = createRootHtml(shell.documentElement.innerHTML);
     fs.writeFileSync(`./404.html`, createRootHtml(shell.documentElement.innerHTML));
+    dropCss({
+        css,
+        html: completeHtml
+    }).sels.forEach(sel => cssWhitelist.add(sel));
 })();
 
+//create sitemap
 (function () {
     siteMap = `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 <url>
-<loc>https://eonasdan.com/</loc>
+<loc>${rootSite}</loc>
 <lastmod>${new Date().toISOString()}</lastmod>
 <priority>1.00</priority>
 </url>
 ${siteMap}
 </urlset>`;
     fs.writeFileSync(`./sitemap.xml`, siteMap);
+})();
+
+//prune css
+(function () {
+    let cleaned = dropCss({
+        html: '',
+        css,
+        shouldDrop: sel => !cssWhitelist.has(sel),
+    });
+    fs.writeFileSync(`./css/style.min.css`, new cleanCSS().minify(cleaned.css).styles);
 })();
