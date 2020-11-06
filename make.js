@@ -137,7 +137,7 @@ posts.forEach(file => {
 
         newPageDocument.title = postMeta.title;
         if (postMeta.thumbnail) {
-            newPageDocument.getElementById('post-thumbnail').innerHTML = `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid"/>`;
+            newPageDocument.getElementById('post-thumbnail').innerHTML = `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="1200"/>`;
             const fullyQualifiedImage = `${rootSite}/img/${postMeta.thumbnail}`;
             setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
             setStructuredData(structuredData, 'image', [
