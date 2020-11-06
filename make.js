@@ -60,6 +60,7 @@ function createRootHtml(html) {
 
 //read shell template
 const shellTemplate = fs.readFileSync(`./templates/shell.html`, 'utf8');
+
 function getShellDocument() {
     return new JSDOM(shellTemplate).window.document;
 }
@@ -77,6 +78,7 @@ let postsMeta = [];
 //prepare the static homepage text
 //todo at some point we'll have to deal with paging or infinite scrolls or something
 let homePageHtml = '';
+let siteMap = '';
 
 //create post files
 //read post template
@@ -92,6 +94,7 @@ const postTemplate = getPostTemplate();
 
 //for each post partial, we create a full html page
 posts.forEach(file => {
+    const fullyQualifiedUrl = `${rootSite}/posts/${file}`;
     const newPageDocument = new JSDOM(postTemplate).window.document;
     const html = fs.readFileSync(`./post_partials/${file}`, 'utf8');
     const article = new JSDOM(html).window.document.querySelector('article');
@@ -109,6 +112,8 @@ posts.forEach(file => {
         body: articleBody,
         postDate: fs.statSync(`./post_partials/${file}`).mtime
     };
+
+    const publishDate = new Date(postMeta.postDate).toISOString();
 
     if (!hasMeta) {
         postsMeta.push(postMeta);
@@ -137,7 +142,7 @@ posts.forEach(file => {
             setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
             setStructuredData(structuredData, 'image', [
                 fullyQualifiedImage
-                ]);
+            ]);
         } else {
             newPageDocument.getElementById('post-thumbnail').innerHTML = '';
             setMetaContent(newPageDocument, 'metaImage', '');
@@ -151,11 +156,9 @@ posts.forEach(file => {
         setStructuredData(structuredData, 'headline', postMeta.title);
 
         setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
-        const fullyQualifiedUrl = `${rootSite}/posts/${file}`;
         setMetaContent(newPageDocument, 'metaUrl', fullyQualifiedUrl);
         setStructuredData(structuredData, 'mainEntityOfPage', fullyQualifiedUrl);
 
-        const publishDate = new Date(postMeta.postDate).toISOString();
         setMetaContent(newPageDocument, 'metaPublishedTime', publishDate);
         setStructuredData(structuredData, 'datePublished', publishDate);
 
@@ -199,7 +202,13 @@ posts.forEach(file => {
                                 </div>
                             </div>
                         </div>
-                    </div>`
+                    </div>`;
+
+    siteMap += `<url>
+<loc>${fullyQualifiedUrl}</loc>
+<lastmod>${publishDate}</lastmod>
+<priority>0.80</priority>
+</url>`;
 });
 
 postsMeta = postsMeta
@@ -210,7 +219,7 @@ postsMeta = postsMeta
 fs.writeFileSync('./posts/posts.json', JSON.stringify(postsMeta, null, 2));
 
 //set home page html
-(function() {
+(function () {
     const indexDocument = new JSDOM(fs.readFileSync(`./templates/index.html`, 'utf8')).window.document;
     indexDocument.getElementById('post-container').innerHTML = homePageHtml;
 
@@ -221,10 +230,22 @@ fs.writeFileSync('./posts/posts.json', JSON.stringify(postsMeta, null, 2));
 })();
 
 //set 404 html
-(function() {
+(function () {
     const indexDocument = new JSDOM(fs.readFileSync(`./templates/404.html`, 'utf8')).window.document;
     const shell = getShellDocument();
     shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
 
     fs.writeFileSync(`./404.html`, createRootHtml(shell.documentElement.innerHTML));
+})();
+
+(function () {
+    siteMap = `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<url>
+<loc>https://eonasdan.com/</loc>
+<lastmod>${new Date().toISOString()}</lastmod>
+<priority>1.00</priority>
+</url>
+${siteMap}
+</urlset>`;
+    fs.writeFileSync(`./sitemap.xml`, siteMap);
 })();

@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /post_partial/
+Disallow: /templates/
+Disallow: /make.js
+Disallow: /package.json
