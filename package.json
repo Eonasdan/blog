@@ -2,7 +2,7 @@
   "name": "blog",
   "version": "1.0.0",
   "scripts": {
-    "start": "npm run build && browser-sync start --server --watch --no-open",
+    "start": "npm run build && browser-sync start --config build/bs-config.js",
     "build": "node ./build/make.js"
   },
   "dependencies": {
