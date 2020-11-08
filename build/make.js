@@ -253,6 +253,15 @@ fs.writeFileSync('posts/posts.json', JSON.stringify(postsMeta, null, 2));
     const shell = getShellDocument();
     shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
 
+    const script = shell.createElement('script');
+    script.type = "module"
+    script.innerHTML = "import 'https://cdn.jsdelivr.net/npm/@pwabuilder/pwaupdate';";
+
+    shell.getElementsByTagName('head')[0].appendChild(script);
+
+    const el = shell.createElement('pwa-update');
+    shell.body.appendChild(el);
+
     const completeHtml = createRootHtml(shell.documentElement.innerHTML);
     fs.writeFileSync(`./index.html`, completeHtml);
     dropCss({

@@ -22,6 +22,7 @@
     "theme_color": "#ffffff",
     "background_color": "#ffffff",
     "display": "standalone",
-    "start_url": "https://eonasdan.com/",
-    "url": "https://eonasdan.com/"
+    "start_url": "/",
+    "url": "https://eonasdan.com/",
+    "scope": "/"
 }
