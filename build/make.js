@@ -126,11 +126,13 @@ posts.forEach(file => {
     // strip html tags, line breaks and extra spaces
     const articleBody = stripHtml(article, ' ');
 
+    const fileModified = fs.statSync(`./build/post_partials/${file}`).mtime;
     let postMeta = {
         file: file,
         title: file.replace(path.extname(file), ''),
         body: articleBody,
-        postDate: fs.statSync(`./build/post_partials/${file}`).mtime
+        postDate: fileModified,
+        updateDate: fileModified
     };
 
     const publishDate = new Date(postMeta.postDate).toISOString();
@@ -182,7 +184,6 @@ posts.forEach(file => {
         setMetaContent(newPageDocument, 'metaPublishedTime', publishDate);
         setStructuredData(structuredData, 'datePublished', publishDate);
 
-        //todo could use the fs.state to get the modified time, but I'd rather have control over that
         if (!postMeta.updateDate) postMeta.updateDate = postMeta.postDate;
         const updateDate = new Date(postMeta.updateDate).toISOString();
         setMetaContent(newPageDocument, 'metaModifiedTime', updateDate);
@@ -233,7 +234,7 @@ posts.forEach(file => {
 
     siteMap += `<url>
 <loc>${fullyQualifiedUrl}</loc>
-<lastmod>${publishDate}</lastmod>
+<lastmod>${new Date(postMeta.updateDate).toISOString()}</lastmod>
 <priority>0.80</priority>
 </url>`;
 });

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Editor</title>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/gh/paraswaykole/editor-js-code@latest/dist/bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-parser@1/build/Parser.browser.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
+          integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-6">
+            Editor:
+            <div id="editorjs">
+
+            </div>
+            ^^
+        </div>
+        <div class="col-6">
+            <div id="output"></div>
+            <hr/>
+            <div id="raw"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const editor = new EditorJS({
+        holder: 'editorjs',
+        placeholder: 'Let`s write an awesome story!',
+        onChange: () => onSave(),
+        tools: {
+            header: Header,
+            checklist: {
+                class: Checklist,
+                inlineToolbar: true,
+            },
+            list: {
+                class: List,
+                inlineToolbar: true,
+            },
+            image: {
+                class: ImageTool,
+                config: {
+                    endpoints: {
+                        byFile: 'build/editor/uploadFile', // Your backend file uploader endpoint
+                    }
+                }
+            },
+            code: CodeTool
+        },
+    });
+
+    const parser = new edjsParser();
+
+    function onSave() {
+        editor.save().then(data => {
+            document.getElementById('raw').innerText = JSON.stringify(data, null, 2);
+            document.getElementById('output').innerHTML = parser.parse(data);
+        });
+    }
+</script>
+</body>
+</html>

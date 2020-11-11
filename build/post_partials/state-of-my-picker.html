@@ -7,10 +7,43 @@
             <div class="post-meta d-flex align-items-center">
                 <span class="post-author">By Jonathan Peterson</span>
                 <i class="far fa-circle" aria-hidden="true"></i>
-                <span class="post-date">October 2, 2020</span>
+                <span class="post-date">October 2, 2020 <i class="far fa-circle" aria-hidden="true"></i> Updated: Novemeber 11th, 2020</span>
             </div>
         </div>
     </div>
+
+    <h2>Update</h2>
+    <h3>Thanks for participating</h3>
+    <p> Thanks to everyone you showed up to the live stream or have participated in the comments. I
+        really appreciate it.&nbsp; </p>
+    <h3>Here’s the plan:</h3>
+    <p> I’ve decided to use the original repo. I think it will be easier to gain traction to the
+        newest version by doing this. Several cdns already pickup the repository and starting a new repo will cause a
+        delay and wide availability. CdnJs for instance, has a GitHub Star requirement. </p>
+    <p> I will be renaming the repo to remove the bootstrap moniker as "tempus-dominus". I will likely do this after Task 1.</p>
+    <p><b>Task 1</b>: Current repo TLC. I’ll be closing all open issues and PRs to provide as much of
+        clean slate as possible. I’m going to leave them for now but I could “migrate” them to an archive repo and then
+        delete them from the original repo. I’ll be trying to add labels and milestones as I figure out what that looks
+        like. The first new milestone will be to complete the tasks 1-5 below. </p>
+    <p><b>Task 2</b>: Merge Tempus Dominus Core and Tempus Dominus BS 4 together. This will be the
+        base going forward. The TD projects will be EOL’d and remain untouched. I will probably archive those repos.
+    </p>
+    <p><b>Task 3</b>: Remove Bootstrap. Moving forward, BS won’t be a hard dependency. I’ll use a tool
+        to grab the basic styles to generate a standalone css. The picker’s class names will probably stay the same.
+        Hopefully, things will still look nice with BS5.&nbsp; </p>
+    <p><b>Task 4</b>: Remove jQuery. This is going to be a challenge, as I mentioned during the stream
+        to find all the places where jQuery chains are being used. A LOT of testing is going to need to be done here.
+    </p>
+    <p><b>Task 5</b>: Swap momentjs to dayjs. I realize this will be a difficult hurdle for some to
+        either change or have a second datetime library. I think doing this now will be easier compared to later. </p>
+    <p><b>Task 6 (long term)</b>: Font Awesome 6. FA6 is in Alpha at the time of this update so it
+        would be a good idea to prepare the default icons for this. Again, I know some people will still use older
+        versions or Bootstrap Icons, but that’s what the options are for. :)&nbsp; </p>
+    <p><b>Task 7</b><b>&nbsp;(long term)</b>: Typescript. I started working on a jquery/bootstrap free
+        typescript version a while back but it was a lot of work and never got it working right. I think a typescript
+        version could happen after everything above is completed. </p>
+
+    <hr/>
 
     <h2 id="way-back-when">Way back when</h2>
     <p>I forked and updated the “bootstrap-datetimepicker” project all the way back in August of 2013—7 years ago! My
@@ -113,6 +146,7 @@
     "title": "State of my datetime picker",
     "thumbnail": "calendar.webp",
     "postDate": "10/02/2020 6:11 pm",
+    "updateDate": "11/11/2020",
     "excerpt": "What will become of my date time picker? I'm planning on hosting a town hall stream on Twitch a month from now, November 7th, 2020. The goal of this stream is to gauge the community's thoughts on which of my ideas to move forward.",
     "tags": "datepicker, javascript, open source, bootstrap"
     }

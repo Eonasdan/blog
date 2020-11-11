@@ -1,3 +1,57 @@
+const fs = require('fs');
+
+var Busboy = require('busboy');
+var multiparty = require('multiparty');
+var util = require('util');
+
+function fileMiddleware(req, res, next) {
+    var parsed = require("url").parse(req.url);
+    if (parsed.pathname.match(/build\/editor\/uploadFile$/)) {
+        console.log('have post to file upload')
+
+        var data = new Buffer('');
+        req.on('data', function(chunk) {
+            console.log('go data');
+            data = Buffer.concat([data, chunk]);
+        });
+        req.on('end', function() {
+            console.log('end');
+            req.rawBody = data;
+            next();
+        });
+
+        var form = new multiparty.Form();
+
+        form.parse(req, function(err, fields, files) {
+            res.writeHead(200, { 'content-type': 'text/plain' });
+            res.write('received upload:\n\n');
+            res.end(util.inspect({ fields: fields, files: files }));
+        });
+
+        var busboy = new Busboy({ headers: req.headers });
+        busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+            console.log('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
+            file.on('data', function(data) {
+                console.log('File [' + fieldname + '] got ' + data.length + ' bytes');
+            });
+            file.on('end', function() {
+                console.log('File [' + fieldname + '] Finished');
+            });
+        });
+        busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
+            console.log('Field [' + fieldname + ']: value: ' + util.inspect(val));
+        });
+        busboy.on('finish', function() {
+            console.log('Done parsing form!');
+            res.writeHead(303, { Connection: 'close', Location: '/' });
+            res.end();
+        });
+        req.pipe(busboy);
+
+
+    }
+    next();
+}
 
 /*
  |--------------------------------------------------------------------------
@@ -32,7 +86,9 @@ module.exports = {
     },
     "proxy": false,
     "port": 3000,
-    "middleware": false,
+    "middleware": [
+        fileMiddleware
+    ],
     "serveStatic": [],
     "ghostMode": {
         "clicks": true,
