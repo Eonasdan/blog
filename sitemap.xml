@@ -1,12 +1,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 <url>
 <loc>https://eonasdan.com</loc>
-<lastmod>2020-11-11T20:17:29.417Z</lastmod>
+<lastmod>2021-03-18T19:25:29.293Z</lastmod>
 <priority>1.00</priority>
 </url>
 <url>
+<loc>https://eonasdan.com/posts/date-time-library.html</loc>
+<lastmod>2021-03-18T19:25:18.588Z</lastmod>
+<priority>0.80</priority>
+</url><url>
 <loc>https://eonasdan.com/posts/state-of-my-picker.html</loc>
-<lastmod>2020-11-11T05:00:00.000Z</lastmod>
+<lastmod>2020-11-17T05:00:00.000Z</lastmod>
 <priority>0.80</priority>
 </url>
 </urlset>

@@ -1,5 +1,6 @@
 const fs = require('fs');
 
+/*
 var Busboy = require('busboy');
 var multiparty = require('multiparty');
 var util = require('util');
@@ -52,6 +53,7 @@ function fileMiddleware(req, res, next) {
     }
     next();
 }
+*/
 
 /*
  |--------------------------------------------------------------------------
@@ -87,7 +89,7 @@ module.exports = {
     "proxy": false,
     "port": 3000,
     "middleware": [
-        fileMiddleware
+        //fileMiddleware
     ],
     "serveStatic": [],
     "ghostMode": {

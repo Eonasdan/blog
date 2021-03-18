@@ -2,11 +2,49 @@ const fs = require('fs');
 const jsdom = require("jsdom");
 const {JSDOM} = jsdom;
 const path = require('path');
-const minify = require('html-minifier-terser').minify;
+const minifyHtml = require('html-minifier-terser').minify;
 const dropCss = require('dropcss');
 const cleanCSS = require('clean-css');
+const {minify} = require('terser');
+const sass = require("sass");
 
 const rootSite = 'https://eonasdan.com';
+
+class PostMeta {
+    file;
+    title;
+    body;
+    postDate;
+    updateDate;
+    thumbnail;
+    excerpt;
+    tags;
+    author;
+
+    constructor(file = '', title = '', body = '', postDate = '', updateDate = '',
+                thumbnail = '', excerpt = '', tags = '', author = new PostAuthor()) {
+        this.file = file;
+        this.title = title;
+        this.body = body;
+        this.postDate = postDate;
+        this.updateDate = updateDate;
+        this.thumbnail = thumbnail;
+        this.excerpt = excerpt;
+        this.tags = tags;
+        this.author = author;
+    }
+
+}
+
+class PostAuthor {
+    name;
+    url;
+
+    constructor(name = '', url = '') {
+        this.name = name;
+        this.url = url;
+    }
+}
 
 function stripHtml(html, replaceDoubleSpaceWith) {
     replaceDoubleSpaceWith = replaceDoubleSpaceWith || '';
@@ -50,7 +88,7 @@ function setStructuredData(structure, property, value) {
 }
 
 function createRootHtml(html) {
-    html = minify(html, {
+    html = minifyHtml(html, {
         collapseWhitespace: true,
         removeComments: true
     });
@@ -86,18 +124,12 @@ let siteMap = '';
 
 //read css files
 function getCss() {
-    let output = '';
-
-    const files = fs
-        .readdirSync('./css')
-        .filter(file => path.extname(file).toLowerCase() === '.css' && !file.includes('.min.'));
-
-    files.forEach(file => {
-        output += fs.readFileSync(`./css/${file}`, 'utf8') + '\r\n';
-    });
-
-    return output;
+    return sass.renderSync({
+        file: './css/style.scss',
+        includePaths: ['node_modules/bootstrap/scss']
+    }).css.toString();
 }
+
 let css = getCss();
 let cssWhitelist = new Set();
 
@@ -112,94 +144,120 @@ function getPostTemplate() {
 
 const postTemplate = getPostTemplate();
 
+function parseMeta(postMeta, metaTag) {
+    if (!metaTag) return;
+    const title = metaTag.querySelector('title')?.innerHTML;
+    if (title) postMeta.title = title;
+
+    const thumbnail = metaTag.querySelector('thumbnail')?.innerHTML;
+    if (thumbnail) postMeta.thumbnail = thumbnail;
+
+    const postDate = metaTag.querySelector('post-date')?.innerHTML;
+    if (postDate) postMeta.postDate = postDate;
+
+    const updateDate = metaTag.querySelector('update-date')?.innerHTML;
+    if (updateDate) postMeta.updateDate = updateDate;
+
+    const excerpt = metaTag.querySelector('excerpt')?.innerHTML;
+    if (excerpt) postMeta.excerpt = excerpt;
+
+    const tags = metaTag.querySelector('tags')?.innerHTML;
+    if (tags) postMeta.tags = tags;
+
+    const postAuthor = metaTag.querySelector('post-author')?.innerHTML;
+    if (postAuthor) {
+        const name = metaTag.querySelector('name')?.innerHTML;
+        if (name) postMeta.author.name = name;
+
+        const url = metaTag.querySelector('url')?.innerHTML;
+        if (url) postMeta.author.url = url;
+    }
+}
+
+//read post loop template
+const postLoopTemplate = fs.readFileSync(`./build/templates/post-loop.html`, 'utf8');
+
+function setInnerHtml(element, value) {
+    if (!element) return;
+    element.innerHTML = value;
+}
+
 //for each post partial, we create a full html page
 posts.forEach(file => {
     const fullyQualifiedUrl = `${rootSite}/posts/${file}`;
     const newPageDocument = new JSDOM(postTemplate).window.document;
-    const html = fs.readFileSync(`./build/post_partials/${file}`, 'utf8');
-    const article = new JSDOM(html).window.document.querySelector('article');
+    const postDocument = new JSDOM(fs.readFileSync(`./build/post_partials/${file}`, 'utf8')).window.document;
+    const article = postDocument.querySelector('article');
+    const loopDocument = new JSDOM(postLoopTemplate).window.document;
     newPageDocument.getElementById('post-inner').innerHTML = article.innerHTML;
 
-    const metaTag = new JSDOM(html).window.document.querySelector('post-meta');
-    let hasMeta = metaTag && stripHtml(metaTag) !== '';
-
-    // strip html tags, line breaks and extra spaces
-    const articleBody = stripHtml(article, ' ');
-
     const fileModified = fs.statSync(`./build/post_partials/${file}`).mtime;
-    let postMeta = {
-        file: file,
-        title: file.replace(path.extname(file), ''),
-        body: articleBody,
-        postDate: fileModified,
-        updateDate: fileModified
-    };
+    let postMeta = new PostMeta(file, file.replace(path.extname(file), ''), stripHtml(article, ' '), fileModified, fileModified);
+
+    parseMeta(postMeta, postDocument.querySelector('post-meta'));
 
     const publishDate = new Date(postMeta.postDate).toISOString();
 
-    if (!hasMeta) {
-        postsMeta.push(postMeta);
+    // create structured data
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": {
+            "@type": "Person",
+            "name": postMeta.author.name,
+            "url": postMeta.author.url
+        },
+    };
+
+    newPageDocument.title = postMeta.title;
+    if (postMeta.thumbnail) {
+        setInnerHtml(newPageDocument.getElementById('post-thumbnail'),
+            `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="1200"/>`);
+        setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0],
+            `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="530"/>`);
+
+        const fullyQualifiedImage = `${rootSite}/img/${postMeta.thumbnail}`;
+        setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
+        setStructuredData(structuredData, 'image', [
+            fullyQualifiedImage
+        ]);
     } else {
-
-        postMeta = {
-            ...postMeta,
-            ...JSON.parse(metaTag.textContent)
-        }
-
-        // create structured data
-        const structuredData = {
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "author": {
-                "@type": "Person",
-                "name": "Jonathan Peterson",
-                "url": "https://eonasdan.com"
-            },
-        };
-
-        newPageDocument.title = postMeta.title;
-        if (postMeta.thumbnail) {
-            newPageDocument.getElementById('post-thumbnail').innerHTML = `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="1200"/>`;
-            const fullyQualifiedImage = `${rootSite}/img/${postMeta.thumbnail}`;
-            setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
-            setStructuredData(structuredData, 'image', [
-                fullyQualifiedImage
-            ]);
-        } else {
-            newPageDocument.getElementById('post-thumbnail').innerHTML = '';
-            setMetaContent(newPageDocument, 'metaImage', '');
-        }
-        /*const shareWidget = document.getElementsByClassName('share-post-widget')[0];
-        shareWidget.getElementsByClassName('facebook')[0].href = `https://www.facebook.com/sharer/sharer.php?u=${location.href}`;
-        shareWidget.getElementsByClassName('twitter')[0].href = `https://twitter.com/intent/tweet?text=CHeck out this blog post from @Eonasdan. ${location.href}`;
-        shareWidget.getElementsByClassName('linkedin')[0].href = `https://www.linkedin.com/sharing/share-offsite/?url=${location.href}`;*/
-
-        setMetaContent(newPageDocument, 'metaTitle', postMeta.title);
-        setStructuredData(structuredData, 'headline', postMeta.title);
-
-        setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
-        setMetaContent(newPageDocument, 'metaUrl', fullyQualifiedUrl);
-        setStructuredData(structuredData, 'mainEntityOfPage', fullyQualifiedUrl);
-
-        setMetaContent(newPageDocument, 'metaPublishedTime', publishDate);
-        setStructuredData(structuredData, 'datePublished', publishDate);
-
-        if (!postMeta.updateDate) postMeta.updateDate = postMeta.postDate;
-        const updateDate = new Date(postMeta.updateDate).toISOString();
-        setMetaContent(newPageDocument, 'metaModifiedTime', updateDate);
-        setStructuredData(structuredData, 'dateModified', updateDate);
-
-        setMetaContent(newPageDocument, 'metaTag', postMeta.tags);
-        setStructuredData(structuredData, 'keywords', postMeta.tags.split(', '));
-
-        postsMeta.push(postMeta);
-
-        // push structured data to body
-        const structuredDataTag = newPageDocument.createElement("script");
-        structuredDataTag.type = "application/ld+json";
-        structuredDataTag.innerHTML = JSON.stringify(structuredData, null, 2);
-        newPageDocument.getElementsByTagName("body")[0].appendChild(structuredDataTag);
+        setInnerHtml(newPageDocument.getElementById('post-thumbnail'), '');
+        setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0], '');
+        setMetaContent(newPageDocument, 'metaImage', '');
     }
+
+    setMetaContent(newPageDocument, 'metaTitle', postMeta.title);
+    setStructuredData(structuredData, 'headline', postMeta.title);
+    setInnerHtml(loopDocument.getElementsByClassName('post-title')[0], postMeta.title);
+    loopDocument.getElementsByClassName('post-link')[0].href = `/posts/${postMeta.file}`
+
+    setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
+    setMetaContent(newPageDocument, 'metaUrl', fullyQualifiedUrl);
+    setStructuredData(structuredData, 'mainEntityOfPage', fullyQualifiedUrl);
+
+    setMetaContent(newPageDocument, 'metaPublishedTime', publishDate);
+    setStructuredData(structuredData, 'datePublished', publishDate);
+    setInnerHtml(loopDocument.getElementsByClassName('post-date')[0], postMeta.postDate);
+
+    if (!postMeta.updateDate) postMeta.updateDate = postMeta.postDate;
+    const updateDate = new Date(postMeta.updateDate).toISOString();
+    setMetaContent(newPageDocument, 'metaModifiedTime', updateDate);
+    setStructuredData(structuredData, 'dateModified', updateDate);
+
+    setMetaContent(newPageDocument, 'metaTag', postMeta.tags);
+    setStructuredData(structuredData, 'keywords', postMeta.tags.split(', '));
+
+    setInnerHtml(loopDocument.getElementsByClassName('post-author')[0], postMeta.author.name);
+    setInnerHtml(loopDocument.getElementsByClassName('post-excerpt')[0], postMeta.excerpt);
+
+    postsMeta.push(postMeta);
+
+    // push structured data to body
+    const structuredDataTag = newPageDocument.createElement("script");
+    structuredDataTag.type = "application/ld+json";
+    structuredDataTag.innerHTML = JSON.stringify(structuredData, null, 2);
+    newPageDocument.getElementsByTagName("body")[0].appendChild(structuredDataTag);
 
     const completeHtml = createRootHtml(newPageDocument.documentElement.innerHTML);
     fs.writeFileSync(`./posts/${file}`, completeHtml);
@@ -211,26 +269,8 @@ posts.forEach(file => {
     }).sels.forEach(sel => cssWhitelist.add(sel));
 
     //add to homepage html
-    homePageHtml += `<div class="single-post-area style-2">
-                        <div class="row align-items-center">
-                            <div class="col-12 col-md-6">
-                                <div class="post-thumbnail">
-                                    <img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid"/>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <div class="post-content mt-0">
-                                    <a href="/posts/${postMeta.file}" class="post-title mb-2">${postMeta.title}</a>
-                                    <div class="post-meta d-flex align-items-center mb-2">
-                                        <span class="post-author">By Jonathan Peterson</span>
-                                        <i class="far fa-circle" aria-hidden="true"></i>
-                                        <span class="post-date">${postMeta.postDate}</span>
-                                    </div>
-                                    <p class="mb-2">${postMeta.excerpt}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
+
+    homePageHtml += loopDocument.getElementsByTagName('body')[0].innerHTML;
 
     siteMap += `<url>
 <loc>${fullyQualifiedUrl}</loc>
@@ -306,4 +346,28 @@ ${siteMap}
         shouldDrop: sel => !cssWhitelist.has(sel),
     });
     fs.writeFileSync(`./css/style.min.css`, new cleanCSS().minify(cleaned.css).styles);
+})();
+
+//minify javascript
+(async function () {
+    const loopDocument = new JSDOM(postLoopTemplate).window.document;
+    const getJs = () => {
+        let output = '';
+
+        const files = fs
+            .readdirSync('./js')
+            .filter(file => path.extname(file).toLowerCase() === '.js' && !file.includes('.min.'));
+
+        files.forEach(file => {
+            output += fs.readFileSync(`./js/${file}`, 'utf8') + '\r\n';
+        });
+
+        return output;
+    }
+
+    const js = getJs().replace('[POSTLOOP]', loopDocument.getElementsByTagName('body')[0].innerHTML);
+
+    const uglified = await minify(js);
+
+    fs.writeFileSync('./js/bundle.min.js', uglified.code);
 })();
