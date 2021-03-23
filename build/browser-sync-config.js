@@ -75,7 +75,10 @@ module.exports = {
     ],
     "watch": true,
     "ignore": [
-        'build'
+        'build',
+        '.git',
+        '.idea',
+        'node_modules'
     ],
     "single": false,
     "watchOptions": {

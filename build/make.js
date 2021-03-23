@@ -7,6 +7,7 @@ const dropCss = require('dropcss');
 const cleanCSS = require('clean-css');
 const {minify} = require('terser');
 const sass = require("sass");
+const chokidar = require('chokidar');
 
 const rootSite = 'https://eonasdan.com';
 
@@ -46,328 +47,398 @@ class PostAuthor {
     }
 }
 
-function stripHtml(html, replaceDoubleSpaceWith) {
-    replaceDoubleSpaceWith = replaceDoubleSpaceWith || '';
-    return html.textContent.replace(/(\r\n|\n|\r)/gm, '').replace(/\s+/g, replaceDoubleSpaceWith);
-}
-
-function removeDirectory(directory, removeSelf) {
-    if (removeSelf === undefined) removeSelf = true;
-    try {
-        const files = fs.readdirSync(directory) || [];
-        files.forEach(file => {
-            const filePath = path.join(directory, file);
-            if (fs.statSync(filePath).isFile())
-                fs.unlinkSync(filePath);
-            else
-                removeDirectory(filePath);
-        })
-    } catch (e) {
-        return;
-    }
-    if (removeSelf)
-        fs.rmdirSync(directory);
-}
-
-// since everyone has to have their own meta data *rolls eyes* the primary purpose here
-// is to quickly find similar tags and set them all at once
-function setMetaContent(rootElement, selector, content) {
-    [...rootElement.getElementsByClassName(selector)].forEach(element => {
-        if (content) {
-            element.setAttribute("content", content);
-            element.removeAttribute("class");
-        } else rootElement.getElementsByTagName('head')[0].removeChild(element);
-    });
-}
-
-// doing this as a function so I don't have to null check values inline
-function setStructuredData(structure, property, value) {
-    if (!value) return;
-
-    structure[property] = value;
-}
-
-function createRootHtml(html) {
-    html = minifyHtml(html, {
-        collapseWhitespace: true,
-        removeComments: true
-    });
-
-    return `<!DOCTYPE html>
-<html lang="en">${html}
-</html>`;
-}
-
-//read shell template
-const shellTemplate = fs.readFileSync(`./build/templates/shell.html`, 'utf8');
-
-function getShellDocument() {
-    return new JSDOM(shellTemplate).window.document;
-}
-
-//remove old stuff
-removeDirectory('./posts', false);
-
-const posts = fs
-    .readdirSync('./build/post_partials')
-    .filter(file => path.extname(file).toLowerCase() === '.html');
-
-//create meta info
-let postsMeta = [];
+class Build {
+    shellTemplate = '';
+    postTemplate = '';
+    postLoopTemplate = '';
+    //create meta info
+    postsMeta = [];
 
 //prepare the static homepage text
 //todo at some point we'll have to deal with paging or infinite scrolls or something
-let homePageHtml = '';
+    homePageHtml = '';
 
 // prepare site map
-let siteMap = '';
+    siteMap = '';
 
-//read css files
-function getCss() {
-    return sass.renderSync({
-        file: './css/style.scss',
-        includePaths: ['node_modules/bootstrap/scss']
-    }).css.toString();
-}
+    css = '';
+    cssWhitelist = new Set();
 
-let css = getCss();
-let cssWhitelist = new Set();
-
-//create post files
-//read post template
-function getPostTemplate() {
-    const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/post-template.html`, 'utf8')).window.document;
-    const shell = getShellDocument();
-    shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
-    return shell.documentElement.innerHTML;
-}
-
-const postTemplate = getPostTemplate();
-
-function parseMeta(postMeta, metaTag) {
-    if (!metaTag) return;
-    const title = metaTag.querySelector('title')?.innerHTML;
-    if (title) postMeta.title = title;
-
-    const thumbnail = metaTag.querySelector('thumbnail')?.innerHTML;
-    if (thumbnail) postMeta.thumbnail = thumbnail;
-
-    const postDate = metaTag.querySelector('post-date')?.innerHTML;
-    if (postDate) postMeta.postDate = postDate;
-
-    const updateDate = metaTag.querySelector('update-date')?.innerHTML;
-    if (updateDate) postMeta.updateDate = updateDate;
-
-    const excerpt = metaTag.querySelector('excerpt')?.innerHTML;
-    if (excerpt) postMeta.excerpt = excerpt;
-
-    const tags = metaTag.querySelector('tags')?.innerHTML;
-    if (tags) postMeta.tags = tags;
-
-    const postAuthor = metaTag.querySelector('post-author')?.innerHTML;
-    if (postAuthor) {
-        const name = metaTag.querySelector('name')?.innerHTML;
-        if (name) postMeta.author.name = name;
-
-        const url = metaTag.querySelector('url')?.innerHTML;
-        if (url) postMeta.author.url = url;
-    }
-}
-
-//read post loop template
-const postLoopTemplate = fs.readFileSync(`./build/templates/post-loop.html`, 'utf8');
-
-function setInnerHtml(element, value) {
-    if (!element) return;
-    element.innerHTML = value;
-}
-
-//for each post partial, we create a full html page
-posts.forEach(file => {
-    const fullyQualifiedUrl = `${rootSite}/posts/${file}`;
-    const newPageDocument = new JSDOM(postTemplate).window.document;
-    const postDocument = new JSDOM(fs.readFileSync(`./build/post_partials/${file}`, 'utf8')).window.document;
-    const article = postDocument.querySelector('article');
-    const loopDocument = new JSDOM(postLoopTemplate).window.document;
-    newPageDocument.getElementById('post-inner').innerHTML = article.innerHTML;
-
-    const fileModified = fs.statSync(`./build/post_partials/${file}`).mtime;
-    let postMeta = new PostMeta(file, file.replace(path.extname(file), ''), stripHtml(article, ' '), fileModified, fileModified);
-
-    parseMeta(postMeta, postDocument.querySelector('post-meta'));
-
-    const publishDate = new Date(postMeta.postDate).toISOString();
-
-    // create structured data
-    const structuredData = {
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "author": {
-            "@type": "Person",
-            "name": postMeta.author.name,
-            "url": postMeta.author.url
-        },
-    };
-
-    newPageDocument.title = postMeta.title;
-    if (postMeta.thumbnail) {
-        setInnerHtml(newPageDocument.getElementById('post-thumbnail'),
-            `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="1200"/>`);
-        setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0],
-            `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="530"/>`);
-
-        const fullyQualifiedImage = `${rootSite}/img/${postMeta.thumbnail}`;
-        setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
-        setStructuredData(structuredData, 'image', [
-            fullyQualifiedImage
-        ]);
-    } else {
-        setInnerHtml(newPageDocument.getElementById('post-thumbnail'), '');
-        setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0], '');
-        setMetaContent(newPageDocument, 'metaImage', '');
+    updateAll() {
+        this.shellTemplate = this.loadTemplate('shell');
+        this.postTemplate = this.postDocument;
+        this.postLoopTemplate = this.loadTemplate(`post-loop`);
+        this.update404();
+        this.updateCss();
+        this.updatePosts();
+        //this.updateHomepage();
+        //this.updateSiteMap();
+        //this.cleanCss();
+        //this.minifyJs().then();
     }
 
-    setMetaContent(newPageDocument, 'metaTitle', postMeta.title);
-    setStructuredData(structuredData, 'headline', postMeta.title);
-    setInnerHtml(loopDocument.getElementsByClassName('post-title')[0], postMeta.title);
-    loopDocument.getElementsByClassName('post-link')[0].href = `/posts/${postMeta.file}`
+    loadTemplate(template) {
+        return fs.readFileSync(`./build/templates/${template}.html`, 'utf8')
+    }
 
-    setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
-    setMetaContent(newPageDocument, 'metaUrl', fullyQualifiedUrl);
-    setStructuredData(structuredData, 'mainEntityOfPage', fullyQualifiedUrl);
+    stripHtml(html, replaceDoubleSpaceWith) {
+        replaceDoubleSpaceWith = replaceDoubleSpaceWith || '';
+        return html.textContent.replace(/(\r\n|\n|\r)/gm, '').replace(/\s+/g, replaceDoubleSpaceWith);
+    }
 
-    setMetaContent(newPageDocument, 'metaPublishedTime', publishDate);
-    setStructuredData(structuredData, 'datePublished', publishDate);
-    setInnerHtml(loopDocument.getElementsByClassName('post-date')[0], postMeta.postDate);
+    removeDirectory(directory, removeSelf) {
+        if (removeSelf === undefined) removeSelf = true;
+        try {
+            const files = fs.readdirSync(directory) || [];
+            files.forEach(file => {
+                const filePath = path.join(directory, file);
+                if (fs.statSync(filePath).isFile())
+                    fs.unlinkSync(filePath);
+                else
+                    this.removeDirectory(filePath);
+            })
+        } catch (e) {
+            return;
+        }
+        if (removeSelf)
+            fs.rmdirSync(directory);
+    }
 
-    if (!postMeta.updateDate) postMeta.updateDate = postMeta.postDate;
-    const updateDate = new Date(postMeta.updateDate).toISOString();
-    setMetaContent(newPageDocument, 'metaModifiedTime', updateDate);
-    setStructuredData(structuredData, 'dateModified', updateDate);
+    // since everyone has to have their own meta data *rolls eyes* the primary purpose here
+    // is to quickly find similar tags and set them all at once
+    setMetaContent(rootElement, selector, content) {
+        [...rootElement.getElementsByClassName(selector)].forEach(element => {
+            if (content) {
+                element.setAttribute("content", content);
+                element.removeAttribute("class");
+            } else rootElement.getElementsByTagName('head')[0].removeChild(element);
+        });
+    }
 
-    setMetaContent(newPageDocument, 'metaTag', postMeta.tags);
-    setStructuredData(structuredData, 'keywords', postMeta.tags.split(', '));
+    // doing this as a function so I don't have to null check values inline
+    setStructuredData(structure, property, value) {
+        if (!value) return;
 
-    setInnerHtml(loopDocument.getElementsByClassName('post-author')[0], postMeta.author.name);
-    setInnerHtml(loopDocument.getElementsByClassName('post-excerpt')[0], postMeta.excerpt);
+        structure[property] = value;
+    }
 
-    postsMeta.push(postMeta);
+    createRootHtml(html) {
+        html = minifyHtml(html, {
+            collapseWhitespace: true,
+            removeComments: true
+        });
 
-    // push structured data to body
-    const structuredDataTag = newPageDocument.createElement("script");
-    structuredDataTag.type = "application/ld+json";
-    structuredDataTag.innerHTML = JSON.stringify(structuredData, null, 2);
-    newPageDocument.getElementsByTagName("body")[0].appendChild(structuredDataTag);
+        return `<!DOCTYPE html>
+<html lang="en">${html}
+</html>`;
+    }
 
-    const completeHtml = createRootHtml(newPageDocument.documentElement.innerHTML);
-    fs.writeFileSync(`./posts/${file}`, completeHtml);
+    get shellDocument() {
+        return new JSDOM(this.shellTemplate).window.document;
+    }
 
-    //update pure css
-    dropCss({
-        css,
-        html: completeHtml
-    }).sels.forEach(sel => cssWhitelist.add(sel));
+    //read css files
+    updateCss() {
+        this.cssWhitelist = new Set();
+        this.css = sass.renderSync({
+            file: './build/styles/style.scss',
+            includePaths: ['node_modules/bootstrap/scss']
+        }).css.toString();
+    }
 
-    //add to homepage html
+    //read post template
+    get postDocument() {
+        const indexDocument = new JSDOM(this.loadTemplate('post-template')).window.document;
+        const shell = this.shellDocument;
+        shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
+        return shell.documentElement.innerHTML;
+    }
 
-    homePageHtml += loopDocument.getElementsByTagName('body')[0].innerHTML;
+    parseMeta(postMeta, metaTag) {
+        if (!metaTag) return;
+        const title = metaTag.querySelector('title')?.innerHTML;
+        if (title) postMeta.title = title;
 
-    siteMap += `<url>
+        const thumbnail = metaTag.querySelector('thumbnail')?.innerHTML;
+        if (thumbnail) postMeta.thumbnail = thumbnail;
+
+        const postDate = metaTag.querySelector('post-date')?.innerHTML;
+        if (postDate) postMeta.postDate = postDate;
+
+        const updateDate = metaTag.querySelector('update-date')?.innerHTML;
+        if (updateDate) postMeta.updateDate = updateDate;
+
+        const excerpt = metaTag.querySelector('excerpt')?.innerHTML;
+        if (excerpt) postMeta.excerpt = excerpt;
+
+        const tags = metaTag.querySelector('tags')?.innerHTML;
+        if (tags) postMeta.tags = tags;
+
+        const postAuthor = metaTag.querySelector('post-author')?.innerHTML;
+        if (postAuthor) {
+            const name = metaTag.querySelector('name')?.innerHTML;
+            if (name) postMeta.author.name = name;
+
+            const url = metaTag.querySelector('url')?.innerHTML;
+            if (url) postMeta.author.url = url;
+        }
+    }
+
+    updatePosts() {
+        //remove old stuff
+        this.removeDirectory('./posts', false);
+
+        const posts = fs
+            .readdirSync('./build/post_partials')
+            .filter(file => path.extname(file).toLowerCase() === '.html');
+
+        posts.forEach(file => {
+            const fullyQualifiedUrl = `${rootSite}/posts/${file}`;
+            const fullPath = `./build/post_partials/${file}`;
+            const newPageDocument = new JSDOM(this.postTemplate).window.document;
+            const postDocument = new JSDOM(fs.readFileSync(fullPath, 'utf8')).window.document;
+            const article = postDocument.querySelector('article');
+            if (!article) {
+                console.error(`failed to read article body for ${fullPath}`);
+                return;
+            }
+            const loopDocument = new JSDOM(this.postLoopTemplate).window.document;
+            newPageDocument.getElementById('post-inner').innerHTML = article.innerHTML;
+
+            const fileModified = fs.statSync(fullPath).mtime;
+            let postMeta = new PostMeta(file, file.replace(path.extname(file), ''), this.stripHtml(article, ' '), fileModified, fileModified);
+
+            this.parseMeta(postMeta, postDocument.querySelector('post-meta'));
+
+            const publishDate = new Date(postMeta.postDate).toISOString();
+
+            // create structured data
+            const structuredData = {
+                "@context": "https://schema.org",
+                "@type": "BlogPosting",
+                "author": {
+                    "@type": "Person",
+                    "name": postMeta.author.name,
+                    "url": postMeta.author.url
+                },
+            };
+
+            newPageDocument.title = postMeta.title;
+            if (postMeta.thumbnail) {
+                this.setInnerHtml(newPageDocument.getElementById('post-thumbnail'),
+                    `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="1200"/>`);
+                this.setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0],
+                    `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="530"/>`);
+
+                const fullyQualifiedImage = `${rootSite}/img/${postMeta.thumbnail}`;
+                this.setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
+                this.setStructuredData(structuredData, 'image', [
+                    fullyQualifiedImage
+                ]);
+            } else {
+                this.setInnerHtml(newPageDocument.getElementById('post-thumbnail'), '');
+                this.setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0], '');
+                this.setMetaContent(newPageDocument, 'metaImage', '');
+            }
+
+            this.setMetaContent(newPageDocument, 'metaTitle', postMeta.title);
+            this.setStructuredData(structuredData, 'headline', postMeta.title);
+            this.setInnerHtml(loopDocument.getElementsByClassName('post-title')[0], postMeta.title);
+            loopDocument.getElementsByClassName('post-link')[0].href = `/posts/${postMeta.file}`
+
+            this.setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
+            this.setMetaContent(newPageDocument, 'metaUrl', fullyQualifiedUrl);
+            this.setStructuredData(structuredData, 'mainEntityOfPage', fullyQualifiedUrl);
+
+            this.setMetaContent(newPageDocument, 'metaPublishedTime', publishDate);
+            this.setStructuredData(structuredData, 'datePublished', publishDate);
+            this.setInnerHtml(loopDocument.getElementsByClassName('post-date')[0], postMeta.postDate);
+
+            if (!postMeta.updateDate) postMeta.updateDate = postMeta.postDate;
+            const updateDate = new Date(postMeta.updateDate).toISOString();
+            this.setMetaContent(newPageDocument, 'metaModifiedTime', updateDate);
+            this.setStructuredData(structuredData, 'dateModified', updateDate);
+
+            this.setMetaContent(newPageDocument, 'metaTag', postMeta.tags);
+            this.setStructuredData(structuredData, 'keywords', postMeta.tags.split(', '));
+
+            this.setInnerHtml(loopDocument.getElementsByClassName('post-author')[0], postMeta.author.name);
+            this.setInnerHtml(loopDocument.getElementsByClassName('post-excerpt')[0], postMeta.excerpt);
+
+            this.postsMeta.push(postMeta);
+
+            // push structured data to body
+            const structuredDataTag = newPageDocument.createElement("script");
+            structuredDataTag.type = "application/ld+json";
+            structuredDataTag.innerHTML = JSON.stringify(structuredData, null, 2);
+            newPageDocument.getElementsByTagName("body")[0].appendChild(structuredDataTag);
+
+            const completeHtml = this.createRootHtml(newPageDocument.documentElement.innerHTML);
+            fs.writeFileSync(`./posts/${file}`, completeHtml);
+
+            //update pure css
+            dropCss({
+                css: this.css,
+                html: completeHtml
+            }).sels.forEach(sel => this.cssWhitelist.add(sel));
+
+            //add to homepage html
+
+            this.homePageHtml += loopDocument.getElementsByTagName('body')[0].innerHTML;
+
+            this.siteMap += `<url>
 <loc>${fullyQualifiedUrl}</loc>
 <lastmod>${new Date(postMeta.updateDate).toISOString()}</lastmod>
 <priority>0.80</priority>
 </url>`;
-});
+        });
 
-postsMeta = postsMeta
-    .sort((a, b) => {
-        return +new Date(a.postDate) > +new Date(b.postDate) ? -1 : 0;
-    });
+        this.postsMeta = this.postsMeta
+            .sort((a, b) => {
+                return +new Date(a.postDate) > +new Date(b.postDate) ? -1 : 0;
+            });
 
-fs.writeFileSync('posts/posts.json', JSON.stringify(postsMeta, null, 2));
+        fs.writeFileSync('posts/posts.json', JSON.stringify(this.postsMeta, null, 2));
 
-//set home page html
-(function () {
-    const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/index.html`, 'utf8')).window.document;
-    indexDocument.getElementById('post-container').innerHTML = homePageHtml;
+        this.updateSiteMap();
+        this.updateHomepage();
+        this.cleanCss();
+    }
 
-    const shell = getShellDocument();
-    shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
+    updateHomepage() {
+        const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/index.html`, 'utf8')).window.document;
+        indexDocument.getElementById('post-container').innerHTML = this.homePageHtml;
 
-    const script = shell.createElement('script');
-    script.type = "module"
-    script.innerHTML = "import 'https://cdn.jsdelivr.net/npm/@pwabuilder/pwaupdate';";
+        const shell = this.shellDocument;
+        shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
 
-    shell.getElementsByTagName('head')[0].appendChild(script);
+        const script = shell.createElement('script');
+        script.type = "module"
+        script.innerHTML = "import 'https://cdn.jsdelivr.net/npm/@pwabuilder/pwaupdate';";
 
-    const el = shell.createElement('pwa-update');
-    shell.body.appendChild(el);
+        shell.getElementsByTagName('head')[0].appendChild(script);
 
-    const completeHtml = createRootHtml(shell.documentElement.innerHTML);
-    fs.writeFileSync(`./index.html`, completeHtml);
-    dropCss({
-        css,
-        html: completeHtml
-    }).sels.forEach(sel => cssWhitelist.add(sel));
-})();
+        const el = shell.createElement('pwa-update');
+        shell.body.appendChild(el);
 
-//set 404 html
-(function () {
-    const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/404.html`, 'utf8')).window.document;
-    const shell = getShellDocument();
-    shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
+        const completeHtml = this.createRootHtml(shell.documentElement.innerHTML);
+        fs.writeFileSync(`./index.html`, completeHtml);
+        dropCss({
+            css: this.css,
+            html: completeHtml
+        }).sels.forEach(sel => this.cssWhitelist.add(sel));
+    }
 
-    const completeHtml = createRootHtml(shell.documentElement.innerHTML);
-    fs.writeFileSync(`./404.html`, createRootHtml(shell.documentElement.innerHTML));
-    dropCss({
-        css,
-        html: completeHtml
-    }).sels.forEach(sel => cssWhitelist.add(sel));
-})();
+    update404() {
+        const indexDocument = new JSDOM(fs.readFileSync(`./build/templates/404.html`, 'utf8')).window.document;
+        const shell = this.shellDocument;
+        shell.getElementById('mainContent').innerHTML = indexDocument.documentElement.innerHTML;
 
-//create sitemap
-(function () {
-    siteMap = `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        const completeHtml = this.createRootHtml(shell.documentElement.innerHTML);
+        fs.writeFileSync(`./404.html`, this.createRootHtml(shell.documentElement.innerHTML));
+        dropCss({
+            css: this.css,
+            html: completeHtml
+        }).sels.forEach(sel => this.cssWhitelist.add(sel));
+    }
+
+    updateSiteMap() {
+        this.siteMap = `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 <url>
 <loc>${rootSite}</loc>
 <lastmod>${new Date().toISOString()}</lastmod>
 <priority>1.00</priority>
 </url>
-${siteMap}
+${this.siteMap}
 </urlset>`;
-    fs.writeFileSync(`./sitemap.xml`, siteMap);
-})();
-
-//prune css
-(function () {
-    let cleaned = dropCss({
-        html: '',
-        css,
-        shouldDrop: sel => !cssWhitelist.has(sel),
-    });
-    fs.writeFileSync(`./css/style.min.css`, new cleanCSS().minify(cleaned.css).styles);
-})();
-
-//minify javascript
-(async function () {
-    const loopDocument = new JSDOM(postLoopTemplate).window.document;
-    const getJs = () => {
-        let output = '';
-
-        const files = fs
-            .readdirSync('./js')
-            .filter(file => path.extname(file).toLowerCase() === '.js' && !file.includes('.min.'));
-
-        files.forEach(file => {
-            output += fs.readFileSync(`./js/${file}`, 'utf8') + '\r\n';
-        });
-
-        return output;
+        fs.writeFileSync(`./sitemap.xml`, this.siteMap);
     }
 
-    const js = getJs().replace('[POSTLOOP]', loopDocument.getElementsByTagName('body')[0].innerHTML);
+    cleanCss() {
+        let cleaned = dropCss({
+            html: '',
+            css: this.css,
+            shouldDrop: sel => !this.cssWhitelist.has(sel),
+        });
+        fs.writeFileSync(`./css/style.min.css`, new cleanCSS().minify(cleaned.css).styles);
+    }
 
-    const uglified = await minify(js);
+    async minifyJs() {
+        const loopDocument = new JSDOM(this.postLoopTemplate).window.document;
+        const getJs = () => {
+            let output = '';
 
-    fs.writeFileSync('./js/bundle.min.js', uglified.code);
-})();
+            const files = fs
+                .readdirSync('./js')
+                .filter(file => path.extname(file).toLowerCase() === '.js' && !file.includes('.min.'));
+
+            files.forEach(file => {
+                output += fs.readFileSync(`./js/${file}`, 'utf8') + '\r\n';
+            });
+
+            return output;
+        }
+
+        const js = getJs().replace('[POSTLOOP]', loopDocument.getElementsByTagName('body')[0].innerHTML);
+
+        const uglified = await minify(js);
+
+        fs.writeFileSync('./js/bundle.min.js', uglified.code);
+    }
+
+    setInnerHtml(element, value) {
+        if (!element) return;
+        element.innerHTML = value;
+    }
+}
+
+const formatter = new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+});
+
+const log = (message) => {
+    console.log(`[Make ${formatter.format(new Date())}] ${message}`)
+}
+
+log('Building..')
+const builder = new Build();
+builder.updateAll();
+
+//todo could allow root site or a config file or something
+if (process.argv.slice(2)[0] === '--watch') {
+    const watcher = chokidar.watch('build', {
+        ignored: /(^|[\/\\])\..|make\.js|browser-sync-config\.js/g, // ignore dotfiles
+        ignoreInitial: true
+    });
+
+    let lastChange = '';
+    let lastChangeFile = '';
+
+    const handleChange = (event, path) => {
+        //reading the file stats seems to trigger this twice, so if the same file changed in less then a second, ignore
+        if (lastChange === formatter.format(new Date()) && lastChangeFile === path) return;
+        log(`${event}: ${path}`);
+        if (path.startsWith('build\\post_partials')) {
+            builder.updatePosts();
+        }
+        if (path.startsWith('build\\styles')) {
+            builder.updateCss();
+        }
+        if (path.startsWith('build\\templates')) {
+            builder.updateAll();
+        }
+        log('Update successful');
+        lastChange = formatter.format(new Date());
+        lastChangeFile = path;
+        console.log('');
+    }
+
+    watcher
+        .on('all', handleChange)
+        .on('ready', () => console.log('[Make] Watching files...'));
+}
