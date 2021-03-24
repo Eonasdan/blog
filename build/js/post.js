@@ -11,10 +11,11 @@ const urlParams = new URLSearchParams(window.location.search);
 const term = urlParams.get('search');
 if (term) {
     document.getElementById('search').value = term;
-    fetch('/posts/posts.json')
+    const termLower = term.toLowerCase();
+    fetch('/js/search.json')
         .then(response => response.json())
         .then(data => {
-            showPosts(data.filter(x => x.title.toLowerCase().includes(term.toLowerCase()) || x.body.toLowerCase().includes(term.toLowerCase())));
+            showPosts(data.filter(x => x.title.toLowerCase().includes(termLower) || x.body.includes(termLower)));
         });
 }
 

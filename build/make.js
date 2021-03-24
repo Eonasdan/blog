@@ -9,8 +9,6 @@ const {minify} = require('terser');
 const sass = require("sass");
 const chokidar = require('chokidar');
 
-const rootSite = 'https://eonasdan.com';
-
 class PostMeta {
     file;
     title;
@@ -71,19 +69,20 @@ class Build {
         this.update404();
         this.updateCss();
         this.updatePosts();
-        //this.updateHomepage();
-        //this.updateSiteMap();
-        //this.cleanCss();
-        //this.minifyJs().then();
+        this.minifyJs().then();
     }
 
     loadTemplate(template) {
         return fs.readFileSync(`./build/templates/${template}.html`, 'utf8')
     }
 
-    stripHtml(html, replaceDoubleSpaceWith) {
-        replaceDoubleSpaceWith = replaceDoubleSpaceWith || '';
-        return html.textContent.replace(/(\r\n|\n|\r)/gm, '').replace(/\s+/g, replaceDoubleSpaceWith);
+    getSearchBody(html) {
+        const bodyPrep = html.textContent
+            .toLowerCase()
+            .replace(/[^a-zA-Z_\s']/gi, ' ') //remove special characters
+            .replace(/\s+/g, ' ').trim() //replace extra white space
+            .split(' ');// split at words;
+        return Array.from(new Set(bodyPrep)).join(' '); //remove duplicate words
     }
 
     removeDirectory(directory, removeSelf) {
@@ -142,7 +141,6 @@ class Build {
         this.cssWhitelist = new Set();
         this.css = sass.renderSync({
             file: './build/styles/style.scss',
-            includePaths: ['node_modules/bootstrap/scss']
         }).css.toString();
     }
 
@@ -186,15 +184,15 @@ class Build {
 
     updatePosts() {
         //remove old stuff
-        this.removeDirectory('./posts', false);
+        this.removeDirectory(`./${siteConfig.output}`, false);
 
         const posts = fs
-            .readdirSync('./build/post_partials')
+            .readdirSync('./build/partials')
             .filter(file => path.extname(file).toLowerCase() === '.html');
 
         posts.forEach(file => {
-            const fullyQualifiedUrl = `${rootSite}/posts/${file}`;
-            const fullPath = `./build/post_partials/${file}`;
+            const fullyQualifiedUrl = `${siteConfig.root}/${siteConfig.output}/${file}`;
+            const fullPath = `./build/partials/${file}`;
             const newPageDocument = new JSDOM(this.postTemplate).window.document;
             const postDocument = new JSDOM(fs.readFileSync(fullPath, 'utf8')).window.document;
             const article = postDocument.querySelector('article');
@@ -206,7 +204,7 @@ class Build {
             newPageDocument.getElementById('post-inner').innerHTML = article.innerHTML;
 
             const fileModified = fs.statSync(fullPath).mtime;
-            let postMeta = new PostMeta(file, file.replace(path.extname(file), ''), this.stripHtml(article, ' '), fileModified, fileModified);
+            let postMeta = new PostMeta(file, file.replace(path.extname(file), ''), this.getSearchBody(article), fileModified, fileModified);
 
             this.parseMeta(postMeta, postDocument.querySelector('post-meta'));
 
@@ -230,7 +228,7 @@ class Build {
                 this.setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0],
                     `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="530"/>`);
 
-                const fullyQualifiedImage = `${rootSite}/img/${postMeta.thumbnail}`;
+                const fullyQualifiedImage = `${siteConfig.root}/img/${postMeta.thumbnail}`;
                 this.setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
                 this.setStructuredData(structuredData, 'image', [
                     fullyQualifiedImage
@@ -244,7 +242,7 @@ class Build {
             this.setMetaContent(newPageDocument, 'metaTitle', postMeta.title);
             this.setStructuredData(structuredData, 'headline', postMeta.title);
             this.setInnerHtml(loopDocument.getElementsByClassName('post-title')[0], postMeta.title);
-            loopDocument.getElementsByClassName('post-link')[0].href = `/posts/${postMeta.file}`
+            loopDocument.getElementsByClassName('post-link')[0].href = `/${siteConfig.output}/${postMeta.file}`
 
             this.setMetaContent(newPageDocument, 'metaDescription', postMeta.excerpt);
             this.setMetaContent(newPageDocument, 'metaUrl', fullyQualifiedUrl);
@@ -274,7 +272,7 @@ class Build {
             newPageDocument.getElementsByTagName("body")[0].appendChild(structuredDataTag);
 
             const completeHtml = this.createRootHtml(newPageDocument.documentElement.innerHTML);
-            fs.writeFileSync(`./posts/${file}`, completeHtml);
+            fs.writeFileSync(`./${siteConfig.output}/${file}`, completeHtml);
 
             //update pure css
             dropCss({
@@ -298,7 +296,7 @@ class Build {
                 return +new Date(a.postDate) > +new Date(b.postDate) ? -1 : 0;
             });
 
-        fs.writeFileSync('posts/posts.json', JSON.stringify(this.postsMeta, null, 2));
+        fs.writeFileSync(`./js/search.json`, JSON.stringify(this.postsMeta, null, 2));
 
         this.updateSiteMap();
         this.updateHomepage();
@@ -345,7 +343,7 @@ class Build {
     updateSiteMap() {
         this.siteMap = `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 <url>
-<loc>${rootSite}</loc>
+<loc>${siteConfig.root}</loc>
 <lastmod>${new Date().toISOString()}</lastmod>
 <priority>1.00</priority>
 </url>
@@ -369,11 +367,11 @@ ${this.siteMap}
             let output = '';
 
             const files = fs
-                .readdirSync('./js')
+                .readdirSync('./build/js')
                 .filter(file => path.extname(file).toLowerCase() === '.js' && !file.includes('.min.'));
 
             files.forEach(file => {
-                output += fs.readFileSync(`./js/${file}`, 'utf8') + '\r\n';
+                output += fs.readFileSync(`./build/js/${file}`, 'utf8') + '\r\n';
             });
 
             return output;
@@ -404,6 +402,13 @@ const formatter = new Intl.DateTimeFormat(undefined, {
 const log = (message) => {
     console.log(`[Make ${formatter.format(new Date())}] ${message}`)
 }
+/**
+ * Site configuration
+ * @type {object}
+ * @property {string} root - Base url for the site.
+ * @property {string} output - Where the built partials will go.
+ */
+const siteConfig = JSON.parse(fs.readFileSync(`./build/site-config.json`, 'utf8'));
 
 log('Building..')
 const builder = new Build();
@@ -411,8 +416,9 @@ builder.updateAll();
 
 //todo could allow root site or a config file or something
 if (process.argv.slice(2)[0] === '--watch') {
-    const watcher = chokidar.watch('build', {
-        ignored: /(^|[\/\\])\..|make\.js|browser-sync-config\.js/g, // ignore dotfiles
+    const watcher = chokidar.watch(['partials', 'styles', 'templates', 'js'], {
+        ignored: /(^|[\/\\])\../, // ignore dotfiles
+        //ignored: /(^|[\/\\])\..|make\.js|browser-sync-config\.js/g, // ignore dotfiles
         ignoreInitial: true
     });
 
@@ -423,7 +429,7 @@ if (process.argv.slice(2)[0] === '--watch') {
         //reading the file stats seems to trigger this twice, so if the same file changed in less then a second, ignore
         if (lastChange === formatter.format(new Date()) && lastChangeFile === path) return;
         log(`${event}: ${path}`);
-        if (path.startsWith('build\\post_partials')) {
+        if (path.startsWith('build\\partials')) {
             builder.updatePosts();
         }
         if (path.startsWith('build\\styles')) {
@@ -431,6 +437,9 @@ if (process.argv.slice(2)[0] === '--watch') {
         }
         if (path.startsWith('build\\templates')) {
             builder.updateAll();
+        }
+        if (path.startsWith('build\\js')) {
+            builder.minifyJs().then();
         }
         log('Update successful');
         lastChange = formatter.format(new Date());
