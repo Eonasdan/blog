@@ -17,7 +17,7 @@ class PostMeta {
     updateDate;
     thumbnail;
     excerpt;
-    tags;
+    tags = '';
     author;
 
     constructor(file = '', title = '', body = '', postDate = '', updateDate = '',
@@ -33,6 +33,35 @@ class PostMeta {
         this.author = author;
     }
 
+    parse(metaTag) {
+        if (!metaTag) return;
+        const title = metaTag.querySelector('title')?.innerHTML;
+        if (title) this.title = title;
+
+        const thumbnail = metaTag.querySelector('thumbnail')?.innerHTML;
+        if (thumbnail) this.thumbnail = thumbnail;
+
+        const postDate = metaTag.querySelector('post-date')?.innerHTML;
+        if (postDate) this.postDate = postDate;
+
+        const updateDate = metaTag.querySelector('update-date')?.innerHTML;
+        if (updateDate) this.updateDate = updateDate;
+
+        const excerpt = metaTag.querySelector('excerpt')?.innerHTML;
+        if (excerpt) this.excerpt = excerpt;
+
+        const tags = metaTag.querySelector('tags')?.innerHTML;
+        if (tags) this.tags = tags;
+
+        const postAuthor = metaTag.querySelector('post-author')?.innerHTML;
+        if (postAuthor) {
+            const name = metaTag.querySelector('name')?.innerHTML;
+            if (name) this.author.name = name;
+
+            const url = metaTag.querySelector('url')?.innerHTML;
+            if (url) this.author.url = url;
+        }
+    }
 }
 
 class PostAuthor {
@@ -66,10 +95,17 @@ class Build {
         this.shellTemplate = this.loadTemplate('shell');
         this.postTemplate = this.postDocument;
         this.postLoopTemplate = this.loadTemplate(`post-loop`);
+        this.reset();
         this.update404();
-        this.updateCss();
+        this.prepareCss();
         this.updatePosts();
         this.minifyJs().then();
+    }
+
+    reset() {
+        this.postsMeta = [];
+        this.homePageHtml = '';
+        this.siteMap = '';
     }
 
     loadTemplate(template) {
@@ -79,7 +115,10 @@ class Build {
     getSearchBody(html) {
         const bodyPrep = html.textContent
             .toLowerCase()
-            .replace(/[^a-zA-Z_\s']/gi, ' ') //remove special characters
+            .replace('.', ' ') //replace dots with spaces
+            //.replace(/((?<=\s)|(?=\s))[^(\w )]*|[^(\w )]*((?<=\s)|(?=\s))/gm, ' ') //remove special characters
+            .replace(/((?<=\s)|(?=\s))[^a-z ]*|[^a-z ]*((?<=\s)|(?=\s))/gm, ' ') //remove special characters
+            //.replace(/[^a-z ]*/gm, '') //remove special characters
             .replace(/\s+/g, ' ').trim() //replace extra white space
             .split(' ');// split at words;
         return Array.from(new Set(bodyPrep)).join(' '); //remove duplicate words
@@ -137,8 +176,12 @@ class Build {
     }
 
     //read css files
-    updateCss() {
+    prepareCss() {
         this.cssWhitelist = new Set();
+
+        this.cssWhitelist.add('post-tags');
+        this.cssWhitelist.add('mt-30');
+
         this.css = sass.renderSync({
             file: './build/styles/style.scss',
         }).css.toString();
@@ -152,37 +195,8 @@ class Build {
         return shell.documentElement.innerHTML;
     }
 
-    parseMeta(postMeta, metaTag) {
-        if (!metaTag) return;
-        const title = metaTag.querySelector('title')?.innerHTML;
-        if (title) postMeta.title = title;
-
-        const thumbnail = metaTag.querySelector('thumbnail')?.innerHTML;
-        if (thumbnail) postMeta.thumbnail = thumbnail;
-
-        const postDate = metaTag.querySelector('post-date')?.innerHTML;
-        if (postDate) postMeta.postDate = postDate;
-
-        const updateDate = metaTag.querySelector('update-date')?.innerHTML;
-        if (updateDate) postMeta.updateDate = updateDate;
-
-        const excerpt = metaTag.querySelector('excerpt')?.innerHTML;
-        if (excerpt) postMeta.excerpt = excerpt;
-
-        const tags = metaTag.querySelector('tags')?.innerHTML;
-        if (tags) postMeta.tags = tags;
-
-        const postAuthor = metaTag.querySelector('post-author')?.innerHTML;
-        if (postAuthor) {
-            const name = metaTag.querySelector('name')?.innerHTML;
-            if (name) postMeta.author.name = name;
-
-            const url = metaTag.querySelector('url')?.innerHTML;
-            if (url) postMeta.author.url = url;
-        }
-    }
-
     updatePosts() {
+        this.reset();
         //remove old stuff
         this.removeDirectory(`./${siteConfig.output}`, false);
 
@@ -200,13 +214,31 @@ class Build {
                 console.error(`failed to read article body for ${fullPath}`);
                 return;
             }
-            const loopDocument = new JSDOM(this.postLoopTemplate).window.document;
-            newPageDocument.getElementById('post-inner').innerHTML = article.innerHTML;
 
             const fileModified = fs.statSync(fullPath).mtime;
+
             let postMeta = new PostMeta(file, file.replace(path.extname(file), ''), this.getSearchBody(article), fileModified, fileModified);
 
-            this.parseMeta(postMeta, postDocument.querySelector('post-meta'));
+            postMeta.parse(postDocument.querySelector('post-meta'));
+
+            const postTagsDiv = postDocument.createElement('div');
+            postTagsDiv.classList.add('post-tags', 'mt-30');
+            const postTagsUl = postDocument.createElement('ul');
+
+            postMeta.tags?.split(',').map(tag => tag.trim()).forEach(tag => {
+                const li = postDocument.createElement('li');
+                const a = postDocument.createElement('a');
+                a.setAttribute('href', `/?search=tag:${tag}`);
+                a.innerHTML = tag;
+                li.appendChild(a);
+                postTagsUl.appendChild(li);
+            });
+
+            postTagsDiv.appendChild(postTagsUl);
+            article.appendChild(postTagsDiv);
+
+            const loopDocument = new JSDOM(this.postLoopTemplate).window.document;
+            newPageDocument.getElementById('post-inner').innerHTML = article.innerHTML;
 
             const publishDate = new Date(postMeta.postDate).toISOString();
 
@@ -224,9 +256,9 @@ class Build {
             newPageDocument.title = postMeta.title;
             if (postMeta.thumbnail) {
                 this.setInnerHtml(newPageDocument.getElementById('post-thumbnail'),
-                    `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="1200"/>`);
+                    `<img src="/img/${postMeta.thumbnail}" alt="${postMeta.title}" class="img-fluid" width="1200"/>`);
                 this.setInnerHtml(loopDocument.getElementsByClassName('post-thumbnail')[0],
-                    `<img src="/img/${postMeta.thumbnail}" alt="" class="img-fluid" width="530"/>`);
+                    `<img src="/img/${postMeta.thumbnail}" alt="${postMeta.title}" class="img-fluid" width="530"/>`);
 
                 const fullyQualifiedImage = `${siteConfig.root}/img/${postMeta.thumbnail}`;
                 this.setMetaContent(newPageDocument, 'metaImage', fullyQualifiedImage);
@@ -352,6 +384,30 @@ ${this.siteMap}
         fs.writeFileSync(`./sitemap.xml`, this.siteMap);
     }
 
+    updateCss() {
+        this.prepareCss();
+
+        const gatherCss = (fullPath) => {
+            const postDocument = new JSDOM(fs.readFileSync(fullPath, 'utf8')).window.document;
+            dropCss({
+                css: this.css,
+                html: postDocument.documentElement.innerHTML
+            }).sels.forEach(sel => this.cssWhitelist.add(sel));
+        }
+
+        fs
+            .readdirSync('./build/partials')
+            .filter(file => path.extname(file).toLowerCase() === '.html')
+            .map(file => `./build/partials/${file}`).forEach(gatherCss);
+
+        fs
+            .readdirSync('./build/templates')
+            .filter(file => path.extname(file).toLowerCase() === '.html')
+            .map(file => `./build/templates/${file}`).forEach(gatherCss);
+
+        this.cleanCss();
+    }
+
     cleanCss() {
         let cleaned = dropCss({
             html: '',
@@ -402,6 +458,7 @@ const formatter = new Intl.DateTimeFormat(undefined, {
 const log = (message) => {
     console.log(`[Make ${formatter.format(new Date())}] ${message}`)
 }
+
 /**
  * Site configuration
  * @type {object}
@@ -412,11 +469,11 @@ const siteConfig = JSON.parse(fs.readFileSync(`./build/site-config.json`, 'utf8'
 
 log('Building..')
 const builder = new Build();
-builder.updateAll();
+builder.updateAll()
 
 //todo could allow root site or a config file or something
 if (process.argv.slice(2)[0] === '--watch') {
-    const watcher = chokidar.watch(['partials', 'styles', 'templates', 'js'], {
+    const watcher = chokidar.watch(['build/partials', 'build/styles', 'build/templates', 'build/js'], {
         ignored: /(^|[\/\\])\../, // ignore dotfiles
         //ignored: /(^|[\/\\])\..|make\.js|browser-sync-config\.js/g, // ignore dotfiles
         ignoreInitial: true
@@ -426,10 +483,10 @@ if (process.argv.slice(2)[0] === '--watch') {
     let lastChangeFile = '';
 
     const handleChange = (event, path) => {
-        //reading the file stats seems to trigger this twice, so if the same file changed in less then a second, ignore
-        if (lastChange === formatter.format(new Date()) && lastChangeFile === path) return;
         log(`${event}: ${path}`);
         if (path.startsWith('build\\partials')) {
+            //reading the file stats seems to trigger this twice, so if the same file changed in less then a second, ignore
+            if (lastChange === formatter.format(new Date()) && lastChangeFile === path) return;
             builder.updatePosts();
         }
         if (path.startsWith('build\\styles')) {
