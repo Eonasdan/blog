@@ -86,8 +86,8 @@ module.exports = {
     },
     "server": true,
     "https": {
-        key: "C:\\https\\localhost.key",
-        cert: "C:\\https\\localhost.crt"
+        key: "C:\\projects\\https\\localhost.key",
+        cert: "C:\\projects\\https\\localhost.crt"
     },
     "proxy": false,
     "port": 3000,
