@@ -1,0 +1,256 @@
+{
+  "tasks": [
+    {
+      "environment": {},
+      "displayName": "Create SAS URI For Proactive CPU Monitor",
+      "alwaysRun": false,
+      "continueOnError": false,
+      "condition": "succeeded()",
+      "enabled": true,
+      "timeoutInMinutes": 0,
+      "retryCountOnTaskFailure": 0,
+      "inputs": {
+        "ConnectedServiceNameARM": "$(azureServiceConnection)",
+        "ScriptType": "InlineScript",
+        "ScriptPath": "",
+        "Inline": "$container = \"memorydumps\"\n$storageAccountKey = (Get-AzStorageAccountKey -ResourceGroupName $(storageResourceGroup) -Name $(storageAccount)).Value[0]\n$context = New-AzStorageContext -StorageAccountName $(storageAccount) -StorageAccountKey $storageAccountKey\n$containerUri = (Get-AzStorageContainer -Container $container -Context $context).CloudBlobContainer.Uri.AbsoluteUri\n$startTime = (Get-Date).AddMinutes(-15)\n$endTime = $startTime.AddDays($(tokenLifetimeDays))\n$sasToken = New-AzStorageAccountSASToken -Permission acdlpruw -StartTime $startTime -ExpiryTime $endTime -Context $context -Protocol HttpsOrHttp -ResourceType Container,Object -Service Blob,Queue,Table\n$sasUrl = \"$containerUri$sasToken\"\n\n$settings=(Get-AzWebApp -Name '$(appService)' -ResourceGroupName $(appResourceGroup)).SiteConfig.AppSettings\n\n$newsettings = @{}\n$settings | ForEach-Object { $newsettings[$_.Name] = $_.Value }\n\n$newsettings[\"WEBSITE_DAAS_STORAGE_SASURI\"] = $sasUrl\n\nSet-AzWebApp -AppSettings $newsettings -Name '$(appService)' -ResourceGroupName $(appResourceGroup)",
+        "ScriptArguments": "",
+        "errorActionPreference": "stop",
+        "FailOnStandardError": "false",
+        "TargetAzurePs": "LatestVersion",
+        "CustomTargetAzurePs": "",
+        "pwsh": "false",
+        "workingDirectory": ""
+      },
+      "task": {
+        "id": "72a1931b-effb-4d2e-8fd8-f8472a07cb62",
+        "versionSpec": "5.*",
+        "definitionType": "task"
+      }
+    },
+    {
+      "environment": {},
+      "displayName": "Setup Proactive CPU Monitor",
+      "alwaysRun": false,
+      "continueOnError": false,
+      "condition": "succeeded()",
+      "enabled": true,
+      "timeoutInMinutes": 0,
+      "retryCountOnTaskFailure": 0,
+      "inputs": {
+        "ConnectedServiceNameARM": "$(azureServiceConnection)",
+        "ScriptType": "InlineScript",
+        "ScriptPath": "",
+        "Inline": "$subscriptionId = (Get-AzContext).Subscription.id\n$path =  \"/subscriptions/$subscriptionId /resourceGroups/$(appResourceGroup)/providers/Microsoft.Web/sites/$(appService)/extensions/daas/api/cpumonitoring?api-Version=2015-08-01\"\n$monitoringSettings = @{\n    Mode=\"$(mode)\"; #Configure Action - An action that you want to take when the above condition is met\n    MonitorDuration=$(duration); #Monitor Frequency - This is how frequently the rule will be evaluated\n    ThresholdSeconds=$(thresholdSeconds); #Threshold Seconds - For the rule to trigger, CPU should exceed % for this many seconds\n    CpuThreshold=$(cpuThreshold); #CPU Threshold% - This is the CPU threshold at which the rule will be triggered\n    MonitorScmProcesses=$$(monitorWebjobs); #Monitor Web job processes\n    MaxActions=$(maxActions); #Maximum Actions - Maximum number of memory dumps to be collected by this rule\n    MaximumNumberOfHours=$(maxHours); #Maximum Duration - Rule will be deactivated after this duration even if no data is collected\n}\n\n$payload = $monitoringSettings | ConvertTo-Json\nInvoke-AzRestMethod -Path $path -Method \"POST\" -Payload $payload",
+        "ScriptArguments": "",
+        "errorActionPreference": "stop",
+        "FailOnStandardError": "false",
+        "TargetAzurePs": "LatestVersion",
+        "CustomTargetAzurePs": "",
+        "pwsh": "false",
+        "workingDirectory": ""
+      },
+      "task": {
+        "id": "72a1931b-effb-4d2e-8fd8-f8472a07cb62",
+        "versionSpec": "5.*",
+        "definitionType": "task"
+      }
+    }
+  ],
+  "runsOn": [
+    "Agent",
+    "DeploymentGroup"
+  ],
+  "revision": 15,
+  "createdBy": {
+    "displayName": "Jonathan Peterson"
+  },
+  "createdOn": "2022-06-09T16:07:17.557Z",
+  "modifiedBy": {
+    "displayName": "Jonathan Peterson"
+  },
+  "modifiedOn": "2022-06-20T17:09:38.440Z",
+  "id": "31353ef1-7070-44d7-91d6-67fba0362cc3",
+  "name": "Proactive CPU Monitor",
+  "version": {
+    "major": 4,
+    "minor": 0,
+    "patch": 0,
+    "isTest": false
+  },
+  "iconUrl": "https://cdn.vsassets.io/v/M203_20220523.1/_content/icon-meta-task.png",
+  "friendlyName": "Proactive CPU Monitor",
+  "description": "Setup SAS URI and enable Proactive CPU Monitor settings. The pipeline agent user must have \"Storage Account Contributor\", \"Storage Blob Data Contributor\" and must be in the SA's vnet.",
+  "category": "Deploy",
+  "definitionType": "metaTask",
+  "author": "Jonathan Peterson",
+  "demands": [],
+  "groups": [],
+  "inputs": [
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "appResourceGroup",
+      "label": "appResourceGroup",
+      "defaultValue": "",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Resource Group the app service is in.",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "appService",
+      "label": "appService",
+      "defaultValue": "",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Name of the app service.",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {
+        "EndpointFilterRule": "ScopeLevel != AzureMLWorkspace"
+      },
+      "name": "azureServiceConnection",
+      "label": "azureServiceConnection",
+      "defaultValue": "",
+      "required": true,
+      "type": "connectedService:AzureRM",
+      "helpMarkDown": "Azure Resource Manager subscription to configure before running PowerShell",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "cpuThreshold",
+      "label": "cpuThreshold",
+      "defaultValue": "75",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "CPU Threshold% - This is the CPU threshold at which the rule will be triggered",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "duration",
+      "label": "duration",
+      "defaultValue": "15",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Monitor Frequency - This is how frequently the rule will be evaluated",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "maxActions",
+      "label": "maxActions",
+      "defaultValue": "10",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Maximum Actions - Maximum number of memory dumps to be collected by this rule",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "maxHours",
+      "label": "maxHours",
+      "defaultValue": "2160",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Maximum Duration - Rule will be deactivated after this duration even if no data is collected",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "mode",
+      "label": "mode",
+      "defaultValue": "CollectKillAndAnalyze",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Configure Action - An action that you want to take when the above condition is met. Valid options: Kill, Collect, CollectAndKill, CollectKillAndAnalyze",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "monitorWebjobs",
+      "label": "monitorWebjobs",
+      "defaultValue": "true",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Monitor Web job processes",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "storageAccount",
+      "label": "storageAccount",
+      "defaultValue": "",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Storage Account for the memory dumps.",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "storageResourceGroup",
+      "label": "storageResourceGroup",
+      "defaultValue": "",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Resource Group the storage account is in.",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "thresholdSeconds",
+      "label": "thresholdSeconds",
+      "defaultValue": "30",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "Threshold Seconds - For the rule to trigger, CPU should exceed % for this many seconds",
+      "groupName": ""
+    },
+    {
+      "aliases": [],
+      "options": {},
+      "properties": {},
+      "name": "tokenLifetimeDays",
+      "label": "tokenLifetimeDays",
+      "defaultValue": "7",
+      "required": true,
+      "type": "string",
+      "helpMarkDown": "How long should the SAS token be valid for",
+      "groupName": ""
+    }
+  ],
+  "satisfies": [],
+  "sourceDefinitions": [],
+  "dataSourceBindings": [],
+  "instanceNameFormat": "Task group: Proactive CPU Monitor $(appResourceGroup)",
+  "preJobExecution": {},
+  "execution": {},
+  "postJobExecution": {}
+}
