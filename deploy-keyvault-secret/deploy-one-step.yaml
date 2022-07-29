@@ -1,0 +1,24 @@
+name: Deploying Key Vault Secrets
+trigger: none
+
+variables:
+  vmImageName: 'ubuntu-latest'
+
+  azureServiceConnection: '--Make this your Azure DevOps <-> Azure Service connection'
+  resourceGroupName: '--Set your resource group--'
+  templateFile: 'template-one-step.bicep' #make sure this points to the correct path
+  appName: '--ADD YOUR APP NAME HERE--'
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: AzureCLI@2
+    displayName: 'Deploy Bicep template'
+    inputs:
+      azureSubscription: $(azureServiceConnection)
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        az deployment group create --resource-group $(resourceGroupName) --template-file $(templateFile) --parameters luggagecombo='$(luggagecombo)'
+      env:
+        luggagecombo: $(luggagecombo) #make sure you set this in the variables
