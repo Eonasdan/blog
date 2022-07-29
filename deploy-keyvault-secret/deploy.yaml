@@ -1,0 +1,50 @@
+name: Deploying Key Vault Secrets
+trigger: none
+
+variables:
+  vmImageName: 'ubuntu-latest'
+
+  azureServiceConnection: '--Make this your Azure DevOps <-> Azure Service connection'
+  resourceGroupName: '--Set your resource group--'
+  templateFile: 'template.bicep' #make sure this points to the correct path
+  appName: '--ADD YOUR APP NAME HERE--'
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: AzureCLI@2
+  displayName: 'Deploy Bicep template'
+  inputs:
+    addSpnToEnvironment: true
+    azureSubscription: $(azureServiceConnection)
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $appId = az ad sp show --id $env:servicePrincipalId --query id
+      az deployment group create --resource-group $(resourceGroupName) --template-file $(templateFile) --parameters webAppName="$(appName)"  adoConnectorServicePrincipal="$appId"
+- task: AzureCLI@2
+  displayName: 'Update Key Vault Policy'
+  inputs:
+    azureSubscription: $(azureServiceConnection)
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $kvName = 'kv-$(appName)'
+      # Get the principal id from the deployed app
+      $principalId = (az webapp identity show --name "wapp-$(appName)" --resource-group "$(resourceGroupName)" --query principalId)
+      
+      # add a policy to allow our new app to access the key vault secrets
+      az keyvault set-policy -n "$kvName" --secret-permissions get list --object-id $principalId
+- task: AzureCLI@2
+  displayName: 'Update Key Vault Secret'
+  inputs:
+    azureSubscription: $(azureServiceConnection)
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $kvName = 'kv-$(appName)'
+      
+      # set the secret value
+      az keyvault secret set --vault-name "$kvName" --name luggagecombo --value "$env:luggagecombo"
+  env:
+    luggagecombo: $(luggagecombo) #make sure you set this in the variables
