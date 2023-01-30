@@ -1,0 +1,1 @@
+az deployment group create --resource-group bicep-demo-rg --template-file "3 acr-modules\3-site-example.bicep"

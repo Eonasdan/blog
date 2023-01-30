@@ -1,0 +1,151 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "farmDeployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "appServicePlanName": {
+            "value": "asp-mytestfarm"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0", 
+          "parameters": {
+            "appServicePlanName": {
+              "type": "string",
+              "defaultValue": "[format('asp-{0}', uniqueString(resourceGroup().id))]",
+              "metadata": {
+                "description": "Name of the Azure App Service Plan."
+              },
+              "maxLength": 40,
+              "minLength": 5
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Provide a location."
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "F1",
+              "metadata": {
+                "description": "Provide a tier of your Azure App Service."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/serverfarms",
+              "apiVersion": "2021-03-01",
+              "name": "[parameters('appServicePlanName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "properties": {
+                "reserved": true
+              },
+              "kind": "linux"
+            }
+          ],
+          "outputs": {
+            "farmId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+              "metadata": {
+                "description": "Output the farm id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "appDeployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "farmId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'farmDeployment'), '2020-10-01').outputs.farmId.value]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "webSiteName": {
+              "type": "string",
+              "defaultValue": "[format('wapp-{0}', uniqueString(resourceGroup().id))]",
+              "metadata": {
+                "description": "Name of the Azure Website."
+              },
+              "maxLength": 40,
+              "minLength": 5
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Provide a location."
+              }
+            },
+            "farmId": {
+              "type": "string",
+              "metadata": {
+                "description": "Provide a Server Farm Id."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2021-03-01",
+              "name": "[parameters('webSiteName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "serverFarmId": "[parameters('farmId')]",
+                "siteConfig": {
+                  "linuxFxVersion": "DOTNETCORE|6.0"
+                }
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'farmDeployment')]"
+      ]
+    }
+  ]
+}
