@@ -1,0 +1,38 @@
+############################
+# STAGE 1: Base
+############################
+FROM mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2022 as base
+
+# Set the shell to PowerShell
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# Install Chocolatey
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));
+
+RUN choco feature enable -n allowGlobalConfirmation
+
+# Install PS Core
+RUN choco install powershell-core
+
+############################
+# STAGE 2: Agent
+############################
+FROM base AS agent
+
+#switch to using powershell core
+SHELL ["pwsh", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+COPY setup.ps1 /tools/
+
+RUN ./tools/setup.ps1
+
+WORKDIR /azp
+
+COPY start.ps1 .
+
+CMD powershell .\start.ps1
+
+#use this instead to test locally without the agent
+#CMD ["pwsh"]

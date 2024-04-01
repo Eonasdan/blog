@@ -1,0 +1,38 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: AzureResourceManagerTemplateDeployment@3
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: '[REPLACE ME]'
+      subscriptionId: '[REPLACE ME]'
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: 'rg-[REPLACE ME]'
+      location: '[REPLACE ME]'
+      templateLocation: 'Linked artifact'
+      csmFile: 'container-agents/registries.bicep'
+      overrideParameters: '-registryName [REPLACE ME]'
+      deploymentMode: 'Incremental'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'ACR Example'
+      repository: 'linux-agents'
+      command: 'buildAndPush'
+      Dockerfile: 'container-agents/linux/dockerfile'
+      tags: 'latest'
+  - task: AzureResourceManagerTemplateDeployment@3
+    inputs:
+      deploymentScope: 'Resource Group'
+      azureResourceManagerConnection: '[REPLACE ME]'
+      subscriptionId: '[REPLACE ME]'
+      action: 'Create Or Update Resource Group'
+      resourceGroupName: 'rg-[REPLACE ME]'
+      location: '[REPLACE ME]'
+      templateLocation: 'Linked artifact'
+      csmFile: 'container-agents/ci-agent-linux-dev.bicep'
+      overrideParameters: '-registryUser $servicePrincipalId -registryPassword $servicePrincipalKey -token $pat'
+      deploymentMode: 'Incremental'
+      addSpnToEnvironment: true
