@@ -1,0 +1,66 @@
+name: "local development"
+networks:
+  azure:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.0.0/24
+
+services:
+  servicebus:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    container_name: servicebus-emulator
+    restart: unless-stopped
+    hostname: servicebus
+    volumes:
+      - "${CONFIG_PATH}:/ServiceBus_Emulator/ConfigFiles/Config.json"
+    ports:
+      - "5672:5672"
+    environment:
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      ACCEPT_EULA: "Y"
+    depends_on:
+      - sqledge
+  sqledge:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: "sqledge"
+    restart: unless-stopped
+    hostname: sqledge
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+
+  cosmosdb:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator
+    container_name: cosmosdb
+    restart: unless-stopped
+    hostname: cosmosdb
+    ports:
+      - "8081:8081"
+      - "10250-10255:10250-10255"
+    environment:
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=2
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+
+  dataexplorer:
+    image: mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest
+    container_name: adx
+    restart: unless-stopped
+    hostname: adx
+    ports:
+      - "8080:8080"
+    environment:
+      - ACCEPT_EULA=Y
+
+  storage:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite
+    restart: unless-stopped
+    hostname: azurite
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - "${AZURITE_DATA_PATH}:/data mcr.microsoft.com/azure-storage/azurite"
