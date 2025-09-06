@@ -56,6 +56,7 @@ function Restart-Docker {
     Stop-Process -Name "Docker Desktop" -Force
     Stop-Process -Name "com.docker.backend" -Force
     Write-Log "WARN: Restarting Docker..."
+	Start-Process -FilePath "C:\Program Files\Docker\Docker\resources\com.docker.backend.exe"
     Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe"
     Start-Sleep -Seconds 20  # Give Docker time to start
 }
